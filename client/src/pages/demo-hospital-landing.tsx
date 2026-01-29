@@ -181,6 +181,9 @@ export default function DemoHospitalLandingPage() {
       { icon: Building2, name: language === 'zh-HK' ? "隔離病房" : "Isolation Ward", highlight: false, available: !!hospital?.isolationWard },
       { icon: Thermometer, name: language === 'zh-HK' ? "院內化驗室" : "In-House Lab", highlight: false, available: !!hospital?.inHouseLab },
       { icon: Camera, name: language === 'zh-HK' ? "影像診斷" : "Diagnostic Imaging", highlight: false, available: hospital?.imagingXray || hospital?.imagingUS || hospital?.imagingCT },
+      { icon: Dog, name: language === 'zh-HK' ? "貓狗分隔候診區" : "Separated Dog/Cat Waiting", highlight: false, available: true },
+      { icon: Stethoscope, name: language === 'zh-HK' ? "貓狗分隔診症室" : "Separated Consultation Rooms", highlight: false, available: true },
+      { icon: Heart, name: language === 'zh-HK' ? "貓狗分隔住院部" : "Separated Hospitalization", highlight: false, available: true },
     ];
     return services.filter(s => s.available !== false);
   }, [hospital, language]);
@@ -251,10 +254,8 @@ export default function DemoHospitalLandingPage() {
 
   // Trust badges
   const trustBadges = useMemo(() => [
-    { name: language === 'zh-HK' ? "漁護署註冊" : "AFCD Registered", icon: BadgeCheck },
-    { name: language === 'zh-HK' ? "香港獸醫學會會員" : "HKVMA Member", icon: Award },
-    { name: language === 'zh-HK' ? "保險直接結算" : "Insurance Direct Billing", icon: CreditCard },
-  ], [language]);
+    { name: "ISFM Gold Standard", icon: Award },
+  ], []);
 
   // What to bring checklist
   const whatToBring = useMemo(() => [
@@ -555,7 +556,7 @@ export default function DemoHospitalLandingPage() {
         <section className="bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+              <div className="grid grid-cols-3 gap-4 text-center">
                 <div className="p-2">
                   <div className="flex items-center justify-center gap-2 mb-1">
                     <Phone className="h-4 w-4" />
@@ -576,13 +577,6 @@ export default function DemoHospitalLandingPage() {
                     <span className="text-2xl font-bold">{responseStats.petsServedYear}</span>
                   </div>
                   <p className="text-xs text-white/80">{language === 'zh-HK' ? '今年救治寵物' : 'Pets Saved This Year'}</p>
-                </div>
-                <div className="p-2">
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <Activity className="h-4 w-4" />
-                    <span className="text-2xl font-bold">{responseStats.emergencySuccessRate}</span>
-                  </div>
-                  <p className="text-xs text-white/80">{language === 'zh-HK' ? '急症成功率' : 'Emergency Success'}</p>
                 </div>
               </div>
             </div>
