@@ -5,10 +5,12 @@ import {
   Phone, MessageCircle, MapPin, Clock, Shield, Star, 
   Stethoscope, Activity, Heart, Siren, ChevronDown, ChevronUp,
   CloudRain, Car, Camera, Users, Award, CheckCircle, ExternalLink,
-  AlertTriangle, Thermometer, Zap, Loader2
+  AlertTriangle, Thermometer, Zap, Loader2, DollarSign, CreditCard,
+  Droplets, Wind, Monitor, Scissors, Dog, Cat, Rabbit, Globe,
+  Calendar, BadgeCheck, CircleDollarSign, Timer, Building2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,6 +32,7 @@ const HOSPITAL_SLUG = "east-island-24-hours-animal-hospital";
 export default function DemoHospitalLandingPage() {
   const { t, language } = useTranslation();
   const [showAllServices, setShowAllServices] = useState(false);
+  const [showAllEquipment, setShowAllEquipment] = useState(false);
 
   const { data: hospital, isLoading: hospitalLoading } = useQuery<Hospital>({
     queryKey: [`/api/hospitals/slug/${HOSPITAL_SLUG}`],
@@ -65,13 +68,6 @@ export default function DemoHospitalLandingPage() {
     return format(new Date(hospital.lastVerifiedAt), 'yyyy-MM-dd');
   }, [hospital?.lastVerifiedAt]);
 
-  const nightFee = useMemo(() => {
-    if (!consultFees || consultFees.length === 0) return null;
-    const nightFees = consultFees.filter(f => f.feeType === 'night' && f.minFee);
-    if (nightFees.length === 0) return null;
-    return Math.min(...nightFees.map(f => parseFloat(f.minFee!)));
-  }, [consultFees]);
-
   const liveStatusText = useMemo(() => {
     if (!hospital) return language === 'zh-HK' ? '現正營業' : 'OPEN NOW';
     switch (hospital.liveStatus) {
@@ -96,100 +92,152 @@ export default function DemoHospitalLandingPage() {
     }
   }, [hospital]);
 
+  const consultationFees = useMemo(() => {
+    return {
+      day: hospital?.consultFeeDay || null,
+      evening: hospital?.consultFeeEvening || null,
+      midnight: hospital?.consultFeeMidnight || null,
+      eveningStart: hospital?.eveningSurchargeStart || '18:00',
+      midnightStart: hospital?.midnightSurchargeStart || '00:00',
+      holidaySurcharge: hospital?.holidaySurchargePercent || null,
+    };
+  }, [hospital]);
+
+  const equipmentList = useMemo(() => {
+    const items: Array<{ name: string; available: boolean; icon: any; category: string }> = [];
+    
+    if (hospital) {
+      items.push({ name: language === 'zh-HK' ? 'X光' : 'X-Ray', available: !!hospital.imagingXray, icon: Camera, category: 'imaging' });
+      items.push({ name: language === 'zh-HK' ? '超聲波' : 'Ultrasound', available: !!hospital.imagingUS, icon: Monitor, category: 'imaging' });
+      items.push({ name: language === 'zh-HK' ? 'CT掃描' : 'CT Scan', available: !!hospital.imagingCT, icon: Monitor, category: 'imaging' });
+      items.push({ name: language === 'zh-HK' ? 'MRI磁力共振' : 'MRI', available: !!hospital.imagingMRI, icon: Monitor, category: 'imaging' });
+      items.push({ name: language === 'zh-HK' ? '氧氣治療' : 'Oxygen Therapy', available: !!hospital.oxygenTherapy, icon: Wind, category: 'critical' });
+      items.push({ name: language === 'zh-HK' ? '輸血服務' : 'Blood Transfusion', available: !!hospital.bloodTransfusion, icon: Droplets, category: 'critical' });
+      items.push({ name: language === 'zh-HK' ? '呼吸機' : 'Ventilator', available: !!hospital.ventilator, icon: Wind, category: 'critical' });
+      items.push({ name: language === 'zh-HK' ? '心臟除顫器' : 'Defibrillator', available: !!hospital.defibrillator, icon: Zap, category: 'critical' });
+      items.push({ name: language === 'zh-HK' ? '內窺鏡' : 'Endoscopy', available: !!hospital.endoscopy, icon: Camera, category: 'diagnostic' });
+      items.push({ name: language === 'zh-HK' ? '院內化驗室' : 'In-House Lab', available: !!hospital.inHouseLab, icon: Thermometer, category: 'diagnostic' });
+      items.push({ name: language === 'zh-HK' ? '隔離病房' : 'Isolation Ward', available: !!hospital.isolationWard, icon: Building2, category: 'facility' });
+      items.push({ name: language === 'zh-HK' ? '緊急軟組織手術' : 'Soft Tissue Surgery', available: !!hospital.sxEmergencySoft, icon: Scissors, category: 'surgery' });
+      items.push({ name: language === 'zh-HK' ? '緊急骨科手術' : 'Orthopedic Surgery', available: !!hospital.sxEmergencyOrtho, icon: Scissors, category: 'surgery' });
+    }
+    
+    return items.filter(item => item.available);
+  }, [hospital, language]);
+
+  const emergencyReadiness = useMemo(() => {
+    return {
+      openT8: hospital?.openT8 ?? true,
+      openT10: hospital?.openT10 ?? false,
+      openBlackRain: hospital?.openBlackRainstorm ?? true,
+      lunarNewYear: hospital?.lunarNewYearOpen ?? false,
+      christmas: hospital?.christmasOpen ?? false,
+      icuLevel: hospital?.icuLevel,
+      onSiteVet247: hospital?.onSiteVet247,
+      nurse24h: hospital?.nurse24h,
+      bloodBankCanine: hospital?.bloodBankCanine,
+      bloodBankFeline: hospital?.bloodBankFeline,
+    };
+  }, [hospital]);
+
   const trustSignals = useMemo(() => [
     { 
       icon: Clock, 
       title: language === 'zh-HK' ? "24小時營業" : "24/7 Open",
-      desc: language === 'zh-HK' ? "全年無休，包括颱風期間" : "Year-round, including typhoons"
+      desc: language === 'zh-HK' ? "全年無休" : "Year-round service",
+      highlight: true
     },
     { 
       icon: Shield, 
       title: language === 'zh-HK' ? "駐場獸醫" : "On-Site Vets",
       desc: hospital?.onSiteVet247 
-        ? (language === 'zh-HK' ? "24小時專業獸醫當值" : "Professional vets on-site 24/7")
-        : (language === 'zh-HK' ? "專業獸醫服務" : "Professional vet services")
+        ? (language === 'zh-HK' ? "24小時專業獸醫當值" : "Professional vets 24/7")
+        : (language === 'zh-HK' ? "專業獸醫服務" : "Professional vet services"),
+      highlight: !!hospital?.onSiteVet247
     },
     { 
-      icon: Award, 
-      title: language === 'zh-HK' ? "認證醫院" : "Verified Hospital",
-      desc: hospital?.verified 
-        ? (language === 'zh-HK' ? "PetSOS認證" : "PetSOS Verified")
-        : (language === 'zh-HK' ? "資料已核實" : "Information verified")
+      icon: Activity, 
+      title: language === 'zh-HK' ? "ICU深切治療" : "ICU Available",
+      desc: hospital?.icuLevel === 'full'
+        ? (language === 'zh-HK' ? "完整ICU設備" : "Full ICU capabilities")
+        : (language === 'zh-HK' ? "深切治療服務" : "Critical care services"),
+      highlight: !!hospital?.icuLevel
     },
     { 
-      icon: Star, 
-      title: hospital?.isPartner 
-        ? (language === 'zh-HK' ? "合作夥伴" : "Partner Hospital")
-        : (language === 'zh-HK' ? "專業服務" : "Professional Care"),
-      desc: hospital?.isPartner 
-        ? (language === 'zh-HK' ? "PetSOS官方合作" : "Official PetSOS Partner")
-        : (language === 'zh-HK' ? "專業緊急護理" : "Expert emergency care")
+      icon: Droplets, 
+      title: language === 'zh-HK' ? "血庫服務" : "Blood Bank",
+      desc: (hospital?.bloodBankCanine && hospital?.bloodBankFeline)
+        ? (language === 'zh-HK' ? "貓狗血庫" : "Canine & Feline")
+        : (language === 'zh-HK' ? "輸血服務" : "Transfusion available"),
+      highlight: !!(hospital?.bloodBankCanine || hospital?.bloodBankFeline)
     },
   ], [hospital, language]);
 
   const coreServices = useMemo(() => {
     const services = [
-      { icon: Siren, name: language === 'zh-HK' ? "緊急急症" : "Emergency Care", highlight: true, available: true },
-      { icon: Activity, name: language === 'zh-HK' ? "深切治療 (ICU)" : "Intensive Care (ICU)", highlight: true, available: !!hospital?.icuLevel },
+      { icon: Siren, name: language === 'zh-HK' ? "24小時急症" : "24/7 Emergency", highlight: true, available: true },
+      { icon: Activity, name: language === 'zh-HK' ? "深切治療 ICU" : "ICU Critical Care", highlight: true, available: !!hospital?.icuLevel },
+      { icon: Droplets, name: language === 'zh-HK' ? "輸血服務" : "Blood Transfusion", highlight: true, available: !!hospital?.bloodTransfusion },
       { icon: Stethoscope, name: language === 'zh-HK' ? "內科診症" : "Internal Medicine", highlight: false, available: true },
-      { icon: Heart, name: language === 'zh-HK' ? "手術服務" : "Surgical Services", highlight: false, available: hospital?.sxEmergencySoft || hospital?.sxEmergencyOrtho },
-      { icon: Camera, name: language === 'zh-HK' ? "X光及超聲波" : "X-Ray & Ultrasound", highlight: false, available: hospital?.imagingXray || hospital?.imagingUS },
-      { icon: Thermometer, name: language === 'zh-HK' ? "血液檢驗" : "Blood Tests", highlight: false, available: hospital?.inHouseLab },
+      { icon: Scissors, name: language === 'zh-HK' ? "緊急手術" : "Emergency Surgery", highlight: false, available: hospital?.sxEmergencySoft || hospital?.sxEmergencyOrtho },
+      { icon: Camera, name: language === 'zh-HK' ? "影像診斷" : "Diagnostic Imaging", highlight: false, available: hospital?.imagingXray || hospital?.imagingUS || hospital?.imagingCT },
     ];
     return services.filter(s => s.available !== false);
   }, [hospital, language]);
 
-  const additionalServices = useMemo(() => {
-    const services: string[] = [];
-    if (hospital?.bloodTransfusion) services.push(language === 'zh-HK' ? "輸血服務" : "Blood Transfusion");
-    if (hospital?.oxygenTherapy) services.push(language === 'zh-HK' ? "氧氣治療" : "Oxygen Therapy");
-    if (hospital?.sxEmergencyOrtho) services.push(language === 'zh-HK' ? "骨科手術" : "Orthopedic Surgery");
-    if (hospital?.sxEmergencySoft) services.push(language === 'zh-HK' ? "軟組織手術" : "Soft Tissue Surgery");
-    if (hospital?.isolationWard) services.push(language === 'zh-HK' ? "隔離病房" : "Isolation Ward");
-    if (hospital?.imagingCT) services.push(language === 'zh-HK' ? "CT掃描" : "CT Scan");
-    if (hospital?.imagingMRI) services.push(language === 'zh-HK' ? "MRI磁力共振" : "MRI");
-    if (hospital?.endoscopy) services.push(language === 'zh-HK' ? "內窺鏡檢查" : "Endoscopy");
-    if (hospital?.ventilator) services.push(language === 'zh-HK' ? "呼吸機" : "Ventilator");
-    if (hospital?.defibrillator) services.push(language === 'zh-HK' ? "心臟除顫器" : "Defibrillator");
-    if (hospital?.exoticVet247) services.push(language === 'zh-HK' ? "特殊動物護理" : "Exotic Pet Care");
-    if (hospital?.ambulanceSupport) services.push(language === 'zh-HK' ? "寵物救護車" : "Pet Ambulance");
-    return services;
-  }, [hospital, language]);
-
-  const weatherProtocol = [
+  const weatherProtocol = useMemo(() => [
     {
       signal: "T8",
-      status: language === 'zh-HK' ? "正常營業" : "Normal Operations",
-      desc: language === 'zh-HK' ? "八號風球期間照常服務" : "Full service during Signal 8"
+      signalZh: "八號風球",
+      status: emergencyReadiness.openT8 
+        ? (language === 'zh-HK' ? "正常營業" : "Open")
+        : (language === 'zh-HK' ? "暫停服務" : "Closed"),
+      open: emergencyReadiness.openT8
     },
     {
       signal: "T10",
-      status: language === 'zh-HK' ? "緊急服務" : "Emergency Only",
-      desc: language === 'zh-HK' ? "十號風球維持緊急服務" : "Emergency cases accepted"
+      signalZh: "十號風球",
+      status: emergencyReadiness.openT10 
+        ? (language === 'zh-HK' ? "緊急服務" : "Emergency Only")
+        : (language === 'zh-HK' ? "暫停服務" : "Closed"),
+      open: emergencyReadiness.openT10
     },
     {
       signal: language === 'zh-HK' ? "黑雨" : "Black Rain",
-      status: language === 'zh-HK' ? "正常營業" : "Normal Operations",
-      desc: language === 'zh-HK' ? "黑色暴雨警告照常服務" : "Full service during Black Rainstorm"
+      signalZh: "黑色暴雨",
+      status: emergencyReadiness.openBlackRain 
+        ? (language === 'zh-HK' ? "正常營業" : "Open")
+        : (language === 'zh-HK' ? "暫停服務" : "Closed"),
+      open: emergencyReadiness.openBlackRain
     },
-  ];
+  ], [emergencyReadiness, language]);
 
-  const teamHighlights = [
+  const holidaySchedule = useMemo(() => [
     {
-      role: language === 'zh-HK' ? "主診獸醫" : "Lead Veterinarian",
-      name: "Dr. Sarah Wong",
-      specialty: language === 'zh-HK' ? "急症及深切治療" : "Emergency & Critical Care",
-      experience: language === 'zh-HK' ? "12年經驗" : "12 years experience"
+      holiday: language === 'zh-HK' ? "農曆新年" : "Lunar New Year",
+      status: emergencyReadiness.lunarNewYear 
+        ? (language === 'zh-HK' ? "正常營業" : "Open")
+        : (language === 'zh-HK' ? "請致電查詢" : "Call to confirm"),
+      open: emergencyReadiness.lunarNewYear
     },
     {
-      role: language === 'zh-HK' ? "外科獸醫" : "Surgical Specialist",
-      name: "Dr. Michael Chan",
-      specialty: language === 'zh-HK' ? "骨科及軟組織手術" : "Orthopedic & Soft Tissue Surgery",
-      experience: language === 'zh-HK' ? "10年經驗" : "10 years experience"
+      holiday: language === 'zh-HK' ? "聖誕節" : "Christmas",
+      status: emergencyReadiness.christmas 
+        ? (language === 'zh-HK' ? "正常營業" : "Open")
+        : (language === 'zh-HK' ? "請致電查詢" : "Call to confirm"),
+      open: emergencyReadiness.christmas
     },
-  ];
+  ], [emergencyReadiness, language]);
 
   const faqItems = useMemo(() => [
+    {
+      q: language === 'zh-HK' ? "夜間急症收費如何？" : "What are your consultation fees?",
+      a: consultationFees.day 
+        ? (language === 'zh-HK' 
+            ? `日間診金 $${consultationFees.day}，傍晚 $${consultationFees.evening || 'N/A'}，深夜 $${consultationFees.midnight || 'N/A'}。以上為診金，不包括藥物及檢查費用。`
+            : `Day: $${consultationFees.day}, Evening: $${consultationFees.evening || 'N/A'}, Midnight: $${consultationFees.midnight || 'N/A'}. These are consultation fees only, excluding medication and tests.`)
+        : (language === 'zh-HK' ? "請致電查詢診金詳情。" : "Please call for fee details.")
+    },
     {
       q: language === 'zh-HK' ? "你們是否24小時有獸醫當值？" : "Do you have vets on-site 24/7?",
       a: hospital?.onSiteVet247 
@@ -198,25 +246,31 @@ export default function DemoHospitalLandingPage() {
     },
     {
       q: language === 'zh-HK' ? "颱風期間是否營業？" : "Are you open during typhoons?",
-      a: language === 'zh-HK' ? "八號風球期間照常營業，十號風球維持緊急服務。我們明白寵物緊急情況不會因天氣而停止。" : "We operate normally during T8 signals and maintain emergency services during T10. We understand pet emergencies don't stop for weather."
+      a: language === 'zh-HK' 
+        ? `八號風球${emergencyReadiness.openT8 ? '照常營業' : '暫停服務'}，十號風球${emergencyReadiness.openT10 ? '維持緊急服務' : '暫停服務'}，黑色暴雨${emergencyReadiness.openBlackRain ? '照常營業' : '暫停服務'}。極端情況請先致電確認。`
+        : `T8: ${emergencyReadiness.openT8 ? 'Open' : 'Closed'}, T10: ${emergencyReadiness.openT10 ? 'Emergency only' : 'Closed'}, Black Rain: ${emergencyReadiness.openBlackRain ? 'Open' : 'Closed'}. Please call to confirm in extreme conditions.`
     },
     {
-      q: language === 'zh-HK' ? "夜間急症收費如何？" : "What are your night emergency fees?",
-      a: nightFee 
-        ? (language === 'zh-HK' ? `夜間急症診金由$${nightFee}起，視乎情況而定。建議致電查詢詳細收費。` : `Night emergency consultation starts from $${nightFee}, depending on the case. Please call for detailed pricing.`)
-        : (language === 'zh-HK' ? "請致電查詢夜間急症收費詳情。" : "Please call for night emergency fee details.")
-    },
-    {
-      q: language === 'zh-HK' ? "你們接受哪些付款方式？" : "What payment methods do you accept?",
-      a: hospital?.payMethods && hospital.payMethods.length > 0
-        ? (language === 'zh-HK' ? `我們接受${hospital.payMethods.join('、')}。` : `We accept ${hospital.payMethods.join(', ')}.`)
-        : (language === 'zh-HK' ? "我們接受現金、信用卡（Visa/Master）、八達通、PayMe及轉數快。" : "We accept cash, credit cards (Visa/Master), Octopus, PayMe, and FPS.")
+      q: language === 'zh-HK' ? "你們有血庫嗎？" : "Do you have a blood bank?",
+      a: (hospital?.bloodBankCanine || hospital?.bloodBankFeline)
+        ? (language === 'zh-HK' 
+            ? `有，我們設有${hospital?.bloodBankCanine ? '狗' : ''}${hospital?.bloodBankCanine && hospital?.bloodBankFeline ? '及' : ''}${hospital?.bloodBankFeline ? '貓' : ''}血庫，可進行緊急輸血。`
+            : `Yes, we have ${hospital?.bloodBankCanine ? 'canine' : ''}${hospital?.bloodBankCanine && hospital?.bloodBankFeline ? ' and ' : ''}${hospital?.bloodBankFeline ? 'feline' : ''} blood bank for emergency transfusions.`)
+        : (language === 'zh-HK' ? "我們可提供輸血服務，詳情請致電查詢。" : "We offer blood transfusion services. Please call for details.")
     },
     {
       q: language === 'zh-HK' ? "需要預約嗎？" : "Do I need an appointment?",
-      a: language === 'zh-HK' ? "緊急情況無需預約，可直接帶寵物前來。一般診症建議預約以減少等候時間。" : "No appointment needed for emergencies - just bring your pet in. For regular consultations, appointments are recommended to reduce waiting time."
+      a: language === 'zh-HK' 
+        ? "緊急情況無需預約，可直接帶寵物前來。一般診症建議預約以減少等候時間。" 
+        : "No appointment needed for emergencies - just bring your pet in. For regular consultations, appointments are recommended to reduce waiting time."
     },
-  ], [hospital, nightFee, language]);
+    {
+      q: language === 'zh-HK' ? "有什麼影像診斷設備？" : "What imaging equipment do you have?",
+      a: language === 'zh-HK'
+        ? `我們設有${hospital?.imagingXray ? 'X光、' : ''}${hospital?.imagingUS ? '超聲波、' : ''}${hospital?.imagingCT ? 'CT掃描、' : ''}${hospital?.imagingMRI ? 'MRI磁力共振' : ''}等影像診斷設備${hospital?.sameDayCT ? '，CT可即日進行' : ''}。`
+        : `We have ${hospital?.imagingXray ? 'X-Ray, ' : ''}${hospital?.imagingUS ? 'Ultrasound, ' : ''}${hospital?.imagingCT ? 'CT Scan, ' : ''}${hospital?.imagingMRI ? 'MRI' : ''} imaging equipment${hospital?.sameDayCT ? '. Same-day CT available' : ''}.`
+    },
+  ], [hospital, consultationFees, emergencyReadiness, language]);
 
   const handleCall = () => {
     if (hospital?.phone) {
@@ -259,8 +313,8 @@ export default function DemoHospitalLandingPage() {
       <SEO
         title={`${hospitalName} | ${language === 'zh-HK' ? '24小時動物醫院' : '24-Hour Animal Hospital'}`}
         description={language === 'zh-HK'
-          ? `${hospitalName} - 香港${regionName}24小時動物醫院。全天候緊急服務，駐場獸醫，颱風期間照常營業。`
-          : `${hospitalName} - 24-hour animal hospital in ${regionName}, Hong Kong. Round-the-clock emergency care, on-site vets, open during typhoons.`
+          ? `${hospitalName} - 香港${regionName}24小時動物醫院。全天候緊急服務，駐場獸醫，颱風期間照常營業。診金由$${consultationFees.day || 370}起。`
+          : `${hospitalName} - 24-hour animal hospital in ${regionName}, Hong Kong. Consultation from $${consultationFees.day || 370}. On-site vets, open during typhoons.`
         }
         canonical={`https://petsos.site/demo-hospital-landing`}
         language={language}
@@ -292,7 +346,7 @@ export default function DemoHospitalLandingPage() {
         </div>
 
         {/* Hero Section */}
-        <section className="bg-gradient-to-br from-red-600 via-red-500 to-orange-500 text-white py-12 md:py-20">
+        <section className="bg-gradient-to-br from-red-600 via-red-500 to-orange-500 text-white py-12 md:py-16">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto text-center">
               {/* Live Status Badge */}
@@ -311,7 +365,7 @@ export default function DemoHospitalLandingPage() {
               </p>
 
               {/* Quick Stats */}
-              <div className="flex flex-wrap justify-center gap-4 mb-8">
+              <div className="flex flex-wrap justify-center gap-3 mb-8">
                 <div className="flex items-center bg-white/20 backdrop-blur rounded-full px-4 py-2">
                   <Clock className="h-5 w-5 mr-2" />
                   <span className="font-medium">{language === 'zh-HK' ? '24小時營業' : '24/7 Open'}</span>
@@ -326,6 +380,12 @@ export default function DemoHospitalLandingPage() {
                   <MapPin className="h-5 w-5 mr-2" />
                   <span className="font-medium">{regionName}</span>
                 </div>
+                {consultationFees.day && (
+                  <div className="flex items-center bg-white/20 backdrop-blur rounded-full px-4 py-2">
+                    <DollarSign className="h-5 w-5 mr-2" />
+                    <span className="font-medium">{language === 'zh-HK' ? `診金$${consultationFees.day}起` : `From $${consultationFees.day}`}</span>
+                  </div>
+                )}
               </div>
 
               {/* Primary CTAs */}
@@ -359,7 +419,7 @@ export default function DemoHospitalLandingPage() {
                 </p>
               )}
 
-              {/* Secondary CTA - Fixed visibility */}
+              {/* Secondary CTA */}
               <Button 
                 onClick={handleDirections}
                 size="lg"
@@ -378,7 +438,6 @@ export default function DemoHospitalLandingPage() {
           <div className="container mx-auto px-4 py-8">
             <div className="max-w-4xl mx-auto">
               <div className="relative aspect-video bg-gray-800 rounded-xl overflow-hidden shadow-2xl">
-                {/* Video Placeholder - Mockup */}
                 <div className="absolute inset-0 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 flex items-center justify-center">
                   <div className="text-center text-white">
                     <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/20 flex items-center justify-center backdrop-blur">
@@ -397,7 +456,6 @@ export default function DemoHospitalLandingPage() {
                   </div>
                 </div>
                 
-                {/* Video Overlay Elements */}
                 <div className="absolute top-4 left-4">
                   <Badge className="bg-red-600 text-white">
                     <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block animate-pulse"></span>
@@ -406,7 +464,7 @@ export default function DemoHospitalLandingPage() {
                 </div>
                 
                 <div className="absolute bottom-4 left-4 right-4">
-                  <div className="flex items-center gap-4 text-white/80 text-sm">
+                  <div className="flex flex-wrap items-center gap-2 text-white/80 text-sm">
                     <div className="flex items-center gap-2 bg-black/50 backdrop-blur rounded-full px-3 py-1">
                       <Activity className="h-4 w-4 text-green-400" />
                       <span>{language === 'zh-HK' ? 'ICU 深切治療' : 'ICU Critical Care'}</span>
@@ -419,7 +477,6 @@ export default function DemoHospitalLandingPage() {
                 </div>
               </div>
               
-              {/* Video Caption */}
               <p className="text-center text-gray-400 text-sm mt-4">
                 {language === 'zh-HK' 
                   ? '專業團隊 · 先進設備 · 全天候護理'
@@ -434,12 +491,101 @@ export default function DemoHospitalLandingPage() {
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {trustSignals.map((signal, index) => (
-                <div key={index} className="text-center p-4">
-                  <signal.icon className="h-8 w-8 mx-auto mb-2 text-red-600" />
+                <div key={index} className={`text-center p-4 rounded-lg ${signal.highlight ? 'bg-red-50 dark:bg-red-900/20' : ''}`}>
+                  <signal.icon className={`h-8 w-8 mx-auto mb-2 ${signal.highlight ? 'text-red-600' : 'text-gray-500'}`} />
                   <h3 className="font-semibold text-gray-900 dark:text-white">{signal.title}</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">{signal.desc}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CONSULTATION FEES - Pet owners want to know pricing upfront */}
+        <section className="py-10 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex items-center justify-center gap-2 mb-6">
+                <CircleDollarSign className="h-6 w-6 text-blue-600" />
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                  {language === 'zh-HK' ? '診金收費' : 'Consultation Fees'}
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Day Fee */}
+                <Card className="border-2 border-green-200 bg-green-50 dark:bg-green-900/20">
+                  <CardContent className="p-6 text-center">
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-green-100 dark:bg-green-800 flex items-center justify-center">
+                      <Clock className="h-6 w-6 text-green-600" />
+                    </div>
+                    <p className="text-sm text-green-700 dark:text-green-400 font-medium mb-1">
+                      {language === 'zh-HK' ? '日間' : 'Daytime'}
+                    </p>
+                    <p className="text-3xl font-bold text-green-800 dark:text-green-300">
+                      ${consultationFees.day || '---'}
+                    </p>
+                    <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                      {language === 'zh-HK' ? '09:00 - 18:00' : '9am - 6pm'}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Evening Fee */}
+                <Card className="border-2 border-amber-200 bg-amber-50 dark:bg-amber-900/20">
+                  <CardContent className="p-6 text-center">
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-amber-100 dark:bg-amber-800 flex items-center justify-center">
+                      <Clock className="h-6 w-6 text-amber-600" />
+                    </div>
+                    <p className="text-sm text-amber-700 dark:text-amber-400 font-medium mb-1">
+                      {language === 'zh-HK' ? '傍晚' : 'Evening'}
+                    </p>
+                    <p className="text-3xl font-bold text-amber-800 dark:text-amber-300">
+                      ${consultationFees.evening || '---'}
+                    </p>
+                    <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
+                      {language === 'zh-HK' ? '18:00 - 00:00' : '6pm - 12am'}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Midnight Fee */}
+                <Card className="border-2 border-purple-200 bg-purple-50 dark:bg-purple-900/20">
+                  <CardContent className="p-6 text-center">
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-purple-100 dark:bg-purple-800 flex items-center justify-center">
+                      <Clock className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <p className="text-sm text-purple-700 dark:text-purple-400 font-medium mb-1">
+                      {language === 'zh-HK' ? '深夜/凌晨' : 'Midnight'}
+                    </p>
+                    <p className="text-3xl font-bold text-purple-800 dark:text-purple-300">
+                      ${consultationFees.midnight || '---'}
+                    </p>
+                    <p className="text-xs text-purple-600 dark:text-purple-500 mt-1">
+                      {language === 'zh-HK' ? '00:00 - 09:00' : '12am - 9am'}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <p className="text-center text-gray-500 text-sm mt-4">
+                {language === 'zh-HK' 
+                  ? '* 以上為診金，不包括藥物、檢查及手術費用。實際收費以診所報價為準。'
+                  : '* Consultation fees only. Excludes medication, tests, and procedures. Final charges may vary.'}
+              </p>
+
+              {/* Payment Methods */}
+              {hospital?.payMethods && hospital.payMethods.length > 0 && (
+                <div className="mt-6 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <CreditCard className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {language === 'zh-HK' ? '付款方式：' : 'Payment: '}
+                      {hospital.payMethods.join(' · ')}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -458,14 +604,18 @@ export default function DemoHospitalLandingPage() {
           </div>
         </section>
 
-        {/* Core Services */}
-        <section className="py-12 bg-gray-50 dark:bg-gray-900">
+        {/* EQUIPMENT & CAPABILITIES */}
+        <section className="py-10 bg-white dark:bg-gray-800">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-gray-900 dark:text-white">
-                {language === 'zh-HK' ? '我們的服務' : 'Our Services'}
-              </h2>
+              <div className="flex items-center justify-center gap-2 mb-6">
+                <Stethoscope className="h-6 w-6 text-red-600" />
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                  {language === 'zh-HK' ? '設備及服務' : 'Equipment & Services'}
+                </h2>
+              </div>
 
+              {/* Core Services Grid */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                 {coreServices.map((service, index) => (
                   <Card key={index} className={`${service.highlight ? 'border-red-200 bg-red-50 dark:bg-red-900/20' : ''}`}>
@@ -484,28 +634,28 @@ export default function DemoHospitalLandingPage() {
                 ))}
               </div>
 
-              {/* Additional Services */}
-              {additionalServices.length > 0 && (
+              {/* Equipment List */}
+              {equipmentList.length > 0 && (
                 <div className="text-center">
                   <Button 
                     variant="ghost" 
-                    onClick={() => setShowAllServices(!showAllServices)}
+                    onClick={() => setShowAllEquipment(!showAllEquipment)}
                     className="text-red-600"
-                    data-testid="button-toggle-services"
+                    data-testid="button-toggle-equipment"
                   >
-                    {showAllServices 
-                      ? (language === 'zh-HK' ? '收起' : 'Show Less')
-                      : (language === 'zh-HK' ? `查看更多服務 (${additionalServices.length})` : `View More Services (${additionalServices.length})`)
+                    {showAllEquipment 
+                      ? (language === 'zh-HK' ? '收起設備列表' : 'Hide Equipment')
+                      : (language === 'zh-HK' ? `查看所有設備 (${equipmentList.length})` : `View All Equipment (${equipmentList.length})`)
                     }
-                    {showAllServices ? <ChevronUp className="ml-1 h-4 w-4" /> : <ChevronDown className="ml-1 h-4 w-4" />}
+                    {showAllEquipment ? <ChevronUp className="ml-1 h-4 w-4" /> : <ChevronDown className="ml-1 h-4 w-4" />}
                   </Button>
 
-                  {showAllServices && (
+                  {showAllEquipment && (
                     <div className="mt-4 flex flex-wrap justify-center gap-2">
-                      {additionalServices.map((service, index) => (
-                        <Badge key={index} variant="outline" className="py-1 px-3">
+                      {equipmentList.map((item, index) => (
+                        <Badge key={index} variant="outline" className="py-2 px-3">
                           <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
-                          {service}
+                          {item.name}
                         </Badge>
                       ))}
                     </div>
@@ -516,26 +666,48 @@ export default function DemoHospitalLandingPage() {
           </div>
         </section>
 
-        {/* Weather Protocol */}
-        <section className="py-12 bg-slate-800 text-white">
+        {/* WEATHER & HOLIDAY AVAILABILITY */}
+        <section className="py-10 bg-slate-800 text-white">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <div className="flex items-center justify-center gap-2 mb-6">
                 <CloudRain className="h-6 w-6" />
                 <h2 className="text-2xl font-bold">
-                  {language === 'zh-HK' ? '惡劣天氣安排' : 'Severe Weather Protocol'}
+                  {language === 'zh-HK' ? '惡劣天氣及假日安排' : 'Weather & Holiday Schedule'}
                 </h2>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Weather Protocol */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 {weatherProtocol.map((item, index) => (
-                  <Card key={index} className="bg-slate-700 border-slate-600">
+                  <Card key={index} className={`${item.open ? 'bg-slate-700 border-green-500' : 'bg-slate-700 border-slate-600'}`}>
                     <CardContent className="p-4 text-center">
-                      <Badge className="mb-2 bg-amber-500 text-white">
+                      <Badge className={`mb-2 ${item.open ? 'bg-amber-500' : 'bg-gray-500'} text-white`}>
                         {item.signal}
                       </Badge>
-                      <p className="font-bold text-green-400">{item.status}</p>
-                      <p className="text-sm text-slate-300 mt-1">{item.desc}</p>
+                      <p className={`font-bold ${item.open ? 'text-green-400' : 'text-gray-400'}`}>
+                        {item.status}
+                      </p>
+                      {item.open && (
+                        <CheckCircle className="h-4 w-4 text-green-400 mx-auto mt-2" />
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Holiday Schedule */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {holidaySchedule.map((item, index) => (
+                  <Card key={index} className="bg-slate-700 border-slate-600">
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Calendar className="h-5 w-5 text-amber-400" />
+                        <span className="font-medium">{item.holiday}</span>
+                      </div>
+                      <Badge className={`${item.open ? 'bg-green-500' : 'bg-amber-500'} text-white`}>
+                        {item.status}
+                      </Badge>
                     </CardContent>
                   </Card>
                 ))}
@@ -543,77 +715,15 @@ export default function DemoHospitalLandingPage() {
 
               <p className="text-center text-slate-400 text-sm mt-6">
                 {language === 'zh-HK' 
-                  ? '我們明白寵物緊急情況不會因天氣而停止。極端情況下請先致電確認。'
-                  : 'We understand pet emergencies don\'t stop for weather. In extreme conditions, please call ahead to confirm.'}
+                  ? '寵物緊急情況不會因天氣而停止。極端情況下請先致電確認。'
+                  : 'Pet emergencies don\'t stop for weather. Please call ahead in extreme conditions.'}
               </p>
             </div>
           </div>
         </section>
 
-        {/* Team Highlights */}
-        <section className="py-12 bg-white dark:bg-gray-800">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
-              <div className="flex items-center justify-center gap-2 mb-8">
-                <Users className="h-6 w-6 text-red-600" />
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-                  {language === 'zh-HK' ? '專業團隊' : 'Our Team'}
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {teamHighlights.map((member, index) => (
-                  <Card key={index}>
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center text-white text-xl font-bold">
-                          {member.name.split(' ').map(n => n[0]).join('')}
-                        </div>
-                        <div>
-                          <p className="text-sm text-red-600 font-medium">{member.role}</p>
-                          <h3 className="font-bold text-lg text-gray-900 dark:text-white">{member.name}</h3>
-                          <p className="text-gray-600 dark:text-gray-400">{member.specialty}</p>
-                          <p className="text-sm text-gray-500 mt-1">{member.experience}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Facilities Preview */}
-        <section className="py-12 bg-gray-100 dark:bg-gray-900">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
-              <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-gray-900 dark:text-white">
-                {language === 'zh-HK' ? '設施環境' : 'Our Facilities'}
-              </h2>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { label: language === 'zh-HK' ? '寬敞候診區' : 'Spacious Waiting Area' },
-                  { label: language === 'zh-HK' ? '先進手術室' : 'Advanced Surgery Room' },
-                  { label: language === 'zh-HK' ? 'ICU深切治療部' : 'ICU Unit' },
-                  { label: language === 'zh-HK' ? '獨立住院區' : 'Hospitalization Ward' },
-                ].map((facility, index) => (
-                  <div key={index} className="aspect-square bg-gray-300 dark:bg-gray-700 rounded-lg flex items-center justify-center text-center p-4">
-                    <div>
-                      <Camera className="h-8 w-8 mx-auto mb-2 text-gray-500" />
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{facility.label}</p>
-                      <p className="text-xs text-gray-400 mt-1">{language === 'zh-HK' ? '(相片預留位)' : '(Photo placeholder)'}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* FAQ Section */}
-        <section className="py-12 bg-white dark:bg-gray-800">
+        <section className="py-10 bg-gray-50 dark:bg-gray-900">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto">
               <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-gray-900 dark:text-white">
@@ -622,7 +732,7 @@ export default function DemoHospitalLandingPage() {
 
               <Accordion type="single" collapsible className="space-y-2">
                 {faqItems.map((item, index) => (
-                  <AccordionItem key={index} value={`faq-${index}`} className="border rounded-lg px-4">
+                  <AccordionItem key={index} value={`faq-${index}`} className="border rounded-lg px-4 bg-white dark:bg-gray-800">
                     <AccordionTrigger className="text-left font-medium" data-testid={`accordion-faq-${index}`}>
                       {item.q}
                     </AccordionTrigger>
@@ -637,7 +747,7 @@ export default function DemoHospitalLandingPage() {
         </section>
 
         {/* Location & Contact */}
-        <section className="py-12 bg-gray-50 dark:bg-gray-900">
+        <section className="py-10 bg-white dark:bg-gray-800">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-gray-900 dark:text-white">
@@ -666,12 +776,12 @@ export default function DemoHospitalLandingPage() {
                 {/* Contact Info */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>{hospitalName}</CardTitle>
+                    <CardTitle className="text-lg">{hospitalName}</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-3">
                     <div className="flex items-start gap-3">
                       <MapPin className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                      <p className="text-gray-700 dark:text-gray-300">{hospitalAddress}</p>
+                      <p className="text-gray-700 dark:text-gray-300 text-sm">{hospitalAddress}</p>
                     </div>
                     {hospital?.phone && (
                       <div className="flex items-center gap-3">
@@ -681,16 +791,26 @@ export default function DemoHospitalLandingPage() {
                         </a>
                       </div>
                     )}
-                    <div className="flex items-center gap-3">
-                      <Clock className="h-5 w-5 text-red-500" />
-                      <p className="text-gray-700 dark:text-gray-300">{language === 'zh-HK' ? '24小時營業' : 'Open 24 Hours'}</p>
-                    </div>
-                    {hospital?.parking && (
+                    {hospital?.whatsapp && (
                       <div className="flex items-center gap-3">
-                        <Car className="h-5 w-5 text-red-500" />
-                        <p className="text-gray-700 dark:text-gray-300">{language === 'zh-HK' ? '設有泊車位' : 'Parking available'}</p>
+                        <MessageCircle className="h-5 w-5 text-green-500" />
+                        <span className="text-gray-700 dark:text-gray-300 text-sm">
+                          WhatsApp: {hospital.whatsapp}
+                        </span>
                       </div>
                     )}
+                    {hospital?.websiteUrl && (
+                      <div className="flex items-center gap-3">
+                        <Globe className="h-5 w-5 text-blue-500" />
+                        <a href={`https://${hospital.websiteUrl}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                          {hospital.websiteUrl}
+                        </a>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3">
+                      <Clock className="h-5 w-5 text-red-500" />
+                      <p className="text-gray-700 dark:text-gray-300 text-sm">{language === 'zh-HK' ? '24小時營業' : 'Open 24 Hours'}</p>
+                    </div>
 
                     <Separator />
 
@@ -749,7 +869,7 @@ export default function DemoHospitalLandingPage() {
         <div className="bg-gray-100 dark:bg-gray-800 py-4 border-t mb-16 md:mb-0">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-              <Shield className="h-4 w-4" />
+              <BadgeCheck className="h-4 w-4" />
               <span>
                 {verifiedDate 
                   ? (language === 'zh-HK' 
