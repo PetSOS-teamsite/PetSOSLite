@@ -252,9 +252,9 @@ export default function DemoHospitalLandingPage() {
       label: "PUC"
     },
     {
-      icon: Clock,
-      value: "24/7",
-      label: language === 'zh-HK' ? "全天候營業" : "Always Open"
+      icon: Scissors,
+      value: language === 'zh-HK' ? "專科支援" : "Specialist Support",
+      label: language === 'zh-HK' ? "外科專科獸醫" : "Surgery Specialist"
     },
   ], [language]);
 
