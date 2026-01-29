@@ -247,14 +247,9 @@ export default function DemoHospitalLandingPage() {
   // Credibility stats
   const credibilityStats = useMemo(() => [
     {
-      icon: Globe,
-      value: language === 'zh-HK' ? "傳媒報導" : "Media Featured",
-      label: language === 'zh-HK' ? "蘋果日報・東方日報" : "Apple Daily • Oriental Daily"
-    },
-    {
       icon: Heart,
       value: language === 'zh-HK' ? "慈善夥伴" : "Charity Partner",
-      label: language === 'zh-HK' ? "愛護動物協會" : "SPCA Hong Kong"
+      label: "PUC"
     },
     {
       icon: Clock,
@@ -567,7 +562,7 @@ export default function DemoHospitalLandingPage() {
         <section className="bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
-              <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="grid grid-cols-2 gap-8 text-center max-w-md mx-auto">
                 {credibilityStats.map((stat, index) => (
                   <div key={index} className="p-2">
                     <div className="flex items-center justify-center gap-2 mb-1">
