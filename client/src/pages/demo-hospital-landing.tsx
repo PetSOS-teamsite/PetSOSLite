@@ -48,7 +48,7 @@ export default function DemoHospitalLandingPage() {
   });
 
   const hospitalName = useMemo(() => {
-    if (!hospital) return language === 'zh-HK' ? "東島24小時動物醫院" : "East Island 24-Hour Animal Hospital";
+    if (!hospital) return language === 'zh-HK' ? "東區24小時動物醫院" : "East Island 24-Hour Animal Hospital";
     return language === 'zh-HK' ? hospital.nameZh : hospital.nameEn;
   }, [hospital, language]);
 
@@ -222,7 +222,7 @@ export default function DemoHospitalLandingPage() {
       name: language === 'zh-HK' ? "陳太太" : "Mrs. Chan",
       pet: language === 'zh-HK' ? "金毛尋回犬 Mochi" : "Golden Retriever - Mochi",
       text: language === 'zh-HK' 
-        ? "凌晨3點Mochi突然嘔吐，打去東島即刻有獸醫接聽，15分鐘內就開始治療。救回Mochi一命！" 
+        ? "凌晨3點Mochi突然嘔吐，打去東區即刻有獸醫接聽，15分鐘內就開始治療。救回Mochi一命！" 
         : "Mochi started vomiting at 3am. Called East Island and a vet answered immediately. Treatment started within 15 minutes. They saved Mochi's life!",
       rating: 5
     },
@@ -230,7 +230,7 @@ export default function DemoHospitalLandingPage() {
       name: language === 'zh-HK' ? "李先生" : "Mr. Lee",
       pet: language === 'zh-HK' ? "英國短毛貓 豆腐" : "British Shorthair - Tofu",
       text: language === 'zh-HK' 
-        ? "八號風球期間豆腐尿道阻塞，還好東島照常營業。獸醫非常專業，即晚做手術，現在完全康復了。" 
+        ? "八號風球期間豆腐尿道阻塞，還好東區照常營業。獸醫非常專業，即晚做手術，現在完全康復了。" 
         : "Tofu had a urinary blockage during T8. Thankfully East Island was open. The vet was very professional, surgery that night, and now fully recovered.",
       rating: 5
     },
@@ -238,7 +238,7 @@ export default function DemoHospitalLandingPage() {
       name: language === 'zh-HK' ? "張小姐" : "Ms. Cheung",
       pet: language === 'zh-HK' ? "貴婦犬 Coco" : "Poodle - Coco",
       text: language === 'zh-HK' 
-        ? "Coco被車撞到，送去東島時已經休克。ICU團隊非常專業，輸血後Coco奇蹟生還。感激不盡！" 
+        ? "Coco被車撞到，送去東區時已經休克。ICU團隊非常專業，輸血後Coco奇蹟生還。感激不盡！" 
         : "Coco was hit by a car and in shock. The ICU team was amazing - after blood transfusion, Coco miraculously survived. Forever grateful!",
       rating: 5
     },
