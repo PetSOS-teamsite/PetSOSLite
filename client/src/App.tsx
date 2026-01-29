@@ -52,6 +52,7 @@ const BloodBankBlogPage = lazy(() => import("@/pages/blog-blood-bank"));
 const TyphoonGuideBlogPage = lazy(() => import("@/pages/blog-typhoon-guide"));
 const ImagingDiagnosticsBlogPage = lazy(() => import("@/pages/blog-imaging-diagnostics"));
 const ExoticEmergencyBlogPage = lazy(() => import("@/pages/blog-exotic-emergency"));
+const DemoHospitalLandingPage = lazy(() => import("@/pages/demo-hospital-landing"));
 
 // Admin pages - lazy loaded (heavy bundle)
 const AdminHospitalsPage = lazy(() => import("@/pages/admin-hospitals"));
@@ -122,6 +123,7 @@ function PublicRouter() {
       <Route path="/blog/typhoon-guide" component={TyphoonGuideBlogPage} />
       <Route path="/blog/imaging-diagnostics" component={ImagingDiagnosticsBlogPage} />
       <Route path="/blog/exotic-emergency" component={ExoticEmergencyBlogPage} />
+      <Route path="/demo-hospital-landing" component={DemoHospitalLandingPage} />
       
       {/* Home route - show landing page for everyone */}
       <Route path="/" component={LandingPage} />
