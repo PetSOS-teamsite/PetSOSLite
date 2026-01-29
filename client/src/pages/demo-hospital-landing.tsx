@@ -677,7 +677,7 @@ export default function DemoHospitalLandingPage() {
                       ${consultationFees.day || '---'}
                     </p>
                     <p className="text-xs text-green-600 dark:text-green-500 mt-1">
-                      {language === 'zh-HK' ? '09:00 - 18:00' : '9am - 6pm'}
+                      {language === 'zh-HK' ? '08:00 - 21:00' : '8am - 9pm'}
                     </p>
                   </CardContent>
                 </Card>
@@ -695,7 +695,7 @@ export default function DemoHospitalLandingPage() {
                       ${consultationFees.evening || '---'}
                     </p>
                     <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
-                      {language === 'zh-HK' ? '18:00 - 00:00' : '6pm - 12am'}
+                      {language === 'zh-HK' ? '21:00 - 00:00' : '9pm - 12am'}
                     </p>
                   </CardContent>
                 </Card>
@@ -707,13 +707,13 @@ export default function DemoHospitalLandingPage() {
                       <Clock className="h-6 w-6 text-purple-600" />
                     </div>
                     <p className="text-sm text-purple-700 dark:text-purple-400 font-medium mb-1">
-                      {language === 'zh-HK' ? '深夜/凌晨' : 'Midnight'}
+                      {language === 'zh-HK' ? '凌晨/急症' : 'Midnight/Emergency'}
                     </p>
                     <p className="text-3xl font-bold text-purple-800 dark:text-purple-300">
                       ${consultationFees.midnight || '---'}
                     </p>
                     <p className="text-xs text-purple-600 dark:text-purple-500 mt-1">
-                      {language === 'zh-HK' ? '00:00 - 09:00' : '12am - 9am'}
+                      {language === 'zh-HK' ? '00:00 - 08:00' : '12am - 8am'}
                     </p>
                   </CardContent>
                 </Card>
@@ -767,12 +767,12 @@ export default function DemoHospitalLandingPage() {
               </div>
 
               {/* Core Services Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                {coreServices.map((service, index) => (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                {(showAllServices ? coreServices : coreServices.slice(0, 6)).map((service, index) => (
                   <Card key={index} className={`${service.highlight ? 'border-red-200 bg-red-50 dark:bg-red-900/20' : ''}`}>
                     <CardContent className="p-4 text-center">
                       <service.icon className={`h-8 w-8 mx-auto mb-2 ${service.highlight ? 'text-red-600' : 'text-gray-600 dark:text-gray-400'}`} />
-                      <p className={`font-medium ${service.highlight ? 'text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                      <p className={`font-medium text-sm ${service.highlight ? 'text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}`}>
                         {service.name}
                       </p>
                       {service.highlight && (
@@ -784,6 +784,24 @@ export default function DemoHospitalLandingPage() {
                   </Card>
                 ))}
               </div>
+
+              {/* Show More Services Toggle */}
+              {coreServices.length > 6 && (
+                <div className="text-center mb-6">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setShowAllServices(!showAllServices)}
+                    className="text-red-600"
+                    data-testid="button-toggle-services"
+                  >
+                    {showAllServices 
+                      ? (language === 'zh-HK' ? '收起服務' : 'Show Less')
+                      : (language === 'zh-HK' ? `顯示全部 ${coreServices.length} 項服務` : `Show All ${coreServices.length} Services`)
+                    }
+                    {showAllServices ? <ChevronUp className="ml-1 h-4 w-4" /> : <ChevronDown className="ml-1 h-4 w-4" />}
+                  </Button>
+                </div>
+              )}
 
               {/* Equipment List */}
               {equipmentList.length > 0 && (
@@ -828,10 +846,11 @@ export default function DemoHospitalLandingPage() {
                 </h2>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Horizontal scroll on mobile, grid on desktop */}
+              <div className="flex md:grid md:grid-cols-3 gap-4 md:gap-6 overflow-x-auto pb-4 md:pb-0 snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
                 {testimonials.map((testimonial, index) => (
-                  <Card key={index} className="bg-gray-50 dark:bg-gray-700 border-none shadow-md hover:shadow-lg transition-shadow" data-testid={`testimonial-card-${index}`}>
-                    <CardContent className="p-6">
+                  <Card key={index} className="bg-gray-50 dark:bg-gray-700 border-none shadow-md hover:shadow-lg transition-shadow min-w-[280px] md:min-w-0 snap-center flex-shrink-0 md:flex-shrink" data-testid={`testimonial-card-${index}`}>
+                    <CardContent className="p-5 md:p-6">
                       <div className="flex items-center gap-1 mb-3">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <Star key={star} className={`h-4 w-4 ${star <= testimonial.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
@@ -851,6 +870,10 @@ export default function DemoHospitalLandingPage() {
                   </Card>
                 ))}
               </div>
+              {/* Swipe hint for mobile */}
+              <p className="text-center text-gray-400 text-xs mt-2 md:hidden">
+                {language === 'zh-HK' ? '← 左右滑動查看更多 →' : '← Swipe for more →'}
+              </p>
 
               <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-6">
                 {language === 'zh-HK' ? '以上為真實個案，已獲寵主同意分享' : 'Real cases shared with pet owner consent'}
@@ -1222,6 +1245,33 @@ export default function DemoHospitalLandingPage() {
             </div>
           </div>
         </div>
+
+        {/* Sticky Mobile CTA Bar */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-lg safe-area-bottom">
+          <div className="flex items-center gap-2 p-3">
+            <Button 
+              onClick={handleCall}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white py-5 font-bold"
+              data-testid="button-call-sticky"
+              disabled={!hospital?.phone}
+            >
+              <Phone className="h-5 w-5 mr-2" />
+              {language === 'zh-HK' ? '立即致電' : 'Call Now'}
+            </Button>
+            <Button 
+              onClick={() => handleWhatsApp()}
+              className="flex-1 bg-green-500 hover:bg-green-600 text-white py-5 font-bold"
+              data-testid="button-whatsapp-sticky"
+              disabled={!hospital?.whatsapp && !hospital?.phone}
+            >
+              <MessageCircle className="h-5 w-5 mr-2" />
+              WhatsApp
+            </Button>
+          </div>
+        </div>
+
+        {/* Spacer for sticky CTA on mobile */}
+        <div className="h-20 md:hidden"></div>
 
         <Footer />
       </div>
