@@ -178,12 +178,33 @@ export default function DemoHospitalLandingPage() {
       { icon: Siren, name: language === 'zh-HK' ? "24小時急症" : "24/7 Emergency", highlight: true, available: true },
       { icon: Activity, name: language === 'zh-HK' ? "深切治療 ICU" : "ICU Critical Care", highlight: true, available: !!hospital?.icuLevel },
       { icon: Droplets, name: language === 'zh-HK' ? "輸血服務" : "Blood Transfusion", highlight: true, available: !!hospital?.bloodTransfusion },
-      { icon: Stethoscope, name: language === 'zh-HK' ? "內科診症" : "Internal Medicine", highlight: false, available: true },
-      { icon: Scissors, name: language === 'zh-HK' ? "緊急手術" : "Emergency Surgery", highlight: false, available: hospital?.sxEmergencySoft || hospital?.sxEmergencyOrtho },
+      { icon: Building2, name: language === 'zh-HK' ? "隔離病房" : "Isolation Ward", highlight: false, available: !!hospital?.isolationWard },
+      { icon: Thermometer, name: language === 'zh-HK' ? "院內化驗室" : "In-House Lab", highlight: false, available: !!hospital?.inHouseLab },
       { icon: Camera, name: language === 'zh-HK' ? "影像診斷" : "Diagnostic Imaging", highlight: false, available: hospital?.imagingXray || hospital?.imagingUS || hospital?.imagingCT },
     ];
     return services.filter(s => s.available !== false);
   }, [hospital, language]);
+
+  const teamHighlights = [
+    {
+      role: language === 'zh-HK' ? "主診獸醫" : "Lead Veterinarian",
+      name: "Dr. Sarah Wong",
+      specialty: language === 'zh-HK' ? "急症及深切治療" : "Emergency & Critical Care",
+      experience: language === 'zh-HK' ? "12年經驗" : "12 years experience"
+    },
+    {
+      role: language === 'zh-HK' ? "外科獸醫" : "Surgical Specialist",
+      name: "Dr. Michael Chan",
+      specialty: language === 'zh-HK' ? "骨科及軟組織手術" : "Orthopedic & Soft Tissue Surgery",
+      experience: language === 'zh-HK' ? "10年經驗" : "10 years experience"
+    },
+    {
+      role: language === 'zh-HK' ? "內科獸醫" : "Internal Medicine Vet",
+      name: "Dr. Emily Lau",
+      specialty: language === 'zh-HK' ? "內科及老年護理" : "Internal Medicine & Geriatric Care",
+      experience: language === 'zh-HK' ? "8年經驗" : "8 years experience"
+    },
+  ];
 
   const weatherProtocol = useMemo(() => [
     {
@@ -433,51 +454,52 @@ export default function DemoHospitalLandingPage() {
           </div>
         </section>
 
-        {/* Hospital Video Banner */}
-        <section className="bg-gray-900">
+        {/* Hospital Photo Banner */}
+        <section className="bg-white dark:bg-gray-900">
           <div className="container mx-auto px-4 py-8">
-            <div className="max-w-4xl mx-auto">
-              <div className="relative aspect-video bg-gray-800 rounded-xl overflow-hidden shadow-2xl">
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 flex items-center justify-center">
-                  <div className="text-center text-white">
-                    <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/20 flex items-center justify-center backdrop-blur">
-                      <svg className="w-10 h-10 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"/>
-                      </svg>
+            <div className="max-w-5xl mx-auto">
+              <div className="relative aspect-[21/9] md:aspect-[3/1] bg-gradient-to-r from-blue-100 via-white to-red-100 dark:from-gray-800 dark:to-gray-700 rounded-xl overflow-hidden shadow-xl">
+                {/* Hospital Photo Placeholder */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="grid grid-cols-3 gap-2 p-4 w-full h-full">
+                    <div className="bg-gradient-to-br from-red-200 to-red-300 dark:from-red-900/50 dark:to-red-800/50 rounded-lg flex items-center justify-center">
+                      <div className="text-center p-2">
+                        <Siren className="h-8 w-8 mx-auto mb-1 text-red-600" />
+                        <p className="text-xs font-medium text-red-700 dark:text-red-300">{language === 'zh-HK' ? '急症室' : 'ER'}</p>
+                      </div>
                     </div>
-                    <h3 className="text-xl font-bold mb-2">
-                      {language === 'zh-HK' ? '醫院環境導覽' : 'Hospital Tour Video'}
-                    </h3>
-                    <p className="text-gray-400 text-sm max-w-md mx-auto">
-                      {language === 'zh-HK' 
-                        ? '觀看我們的24小時急症室、ICU深切治療部、手術室及住院設施'
-                        : 'Tour our 24-hour emergency room, ICU, surgery suite, and hospitalization facilities'}
-                    </p>
+                    <div className="bg-gradient-to-br from-blue-200 to-blue-300 dark:from-blue-900/50 dark:to-blue-800/50 rounded-lg flex items-center justify-center">
+                      <div className="text-center p-2">
+                        <Activity className="h-8 w-8 mx-auto mb-1 text-blue-600" />
+                        <p className="text-xs font-medium text-blue-700 dark:text-blue-300">{language === 'zh-HK' ? 'ICU' : 'ICU'}</p>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-200 to-green-300 dark:from-green-900/50 dark:to-green-800/50 rounded-lg flex items-center justify-center">
+                      <div className="text-center p-2">
+                        <Scissors className="h-8 w-8 mx-auto mb-1 text-green-600" />
+                        <p className="text-xs font-medium text-green-700 dark:text-green-300">{language === 'zh-HK' ? '手術室' : 'Surgery'}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
-                <div className="absolute top-4 left-4">
-                  <Badge className="bg-red-600 text-white">
+                {/* Overlay badges */}
+                <div className="absolute top-3 left-3">
+                  <Badge className="bg-red-600 text-white shadow-lg">
                     <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block animate-pulse"></span>
                     {language === 'zh-HK' ? '24小時運作' : '24/7 Operations'}
                   </Badge>
                 </div>
                 
-                <div className="absolute bottom-4 left-4 right-4">
-                  <div className="flex flex-wrap items-center gap-2 text-white/80 text-sm">
-                    <div className="flex items-center gap-2 bg-black/50 backdrop-blur rounded-full px-3 py-1">
-                      <Activity className="h-4 w-4 text-green-400" />
-                      <span>{language === 'zh-HK' ? 'ICU 深切治療' : 'ICU Critical Care'}</span>
-                    </div>
-                    <div className="flex items-center gap-2 bg-black/50 backdrop-blur rounded-full px-3 py-1">
-                      <Siren className="h-4 w-4 text-red-400" />
-                      <span>{language === 'zh-HK' ? '緊急急症室' : 'Emergency Room'}</span>
-                    </div>
-                  </div>
+                <div className="absolute top-3 right-3">
+                  <Badge className="bg-white/90 text-gray-800 shadow-lg">
+                    <Camera className="h-3 w-3 mr-1" />
+                    {language === 'zh-HK' ? '醫院實景' : 'Hospital Photos'}
+                  </Badge>
                 </div>
               </div>
               
-              <p className="text-center text-gray-400 text-sm mt-4">
+              <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-4">
                 {language === 'zh-HK' 
                   ? '專業團隊 · 先進設備 · 全天候護理'
                   : 'Professional Team · Advanced Equipment · 24/7 Care'}
@@ -666,13 +688,45 @@ export default function DemoHospitalLandingPage() {
           </div>
         </section>
 
-        {/* WEATHER & HOLIDAY AVAILABILITY */}
-        <section className="py-10 bg-slate-800 text-white">
+        {/* VET TEAM SECTION */}
+        <section className="py-10 bg-gray-50 dark:bg-gray-900">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex items-center justify-center gap-2 mb-8">
+                <Users className="h-6 w-6 text-red-600" />
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                  {language === 'zh-HK' ? '專業獸醫團隊' : 'Our Veterinary Team'}
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {teamHighlights.map((member, index) => (
+                  <Card key={index} className="bg-white dark:bg-gray-800 hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6 text-center">
+                      <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                        {member.name.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <p className="text-sm text-red-600 font-medium mb-1">{member.role}</p>
+                      <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-1">{member.name}</h3>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">{member.specialty}</p>
+                      <Badge variant="secondary" className="mt-3 text-xs">
+                        {member.experience}
+                      </Badge>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* WEATHER & HOLIDAY AVAILABILITY - Improved Readability */}
+        <section className="py-10 bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 text-white">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <div className="flex items-center justify-center gap-2 mb-6">
-                <CloudRain className="h-6 w-6" />
-                <h2 className="text-2xl font-bold">
+                <CloudRain className="h-6 w-6 text-amber-400" />
+                <h2 className="text-2xl font-bold text-white">
                   {language === 'zh-HK' ? '惡劣天氣及假日安排' : 'Weather & Holiday Schedule'}
                 </h2>
               </div>
@@ -680,16 +734,16 @@ export default function DemoHospitalLandingPage() {
               {/* Weather Protocol */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 {weatherProtocol.map((item, index) => (
-                  <Card key={index} className={`${item.open ? 'bg-slate-700 border-green-500' : 'bg-slate-700 border-slate-600'}`}>
-                    <CardContent className="p-4 text-center">
-                      <Badge className={`mb-2 ${item.open ? 'bg-amber-500' : 'bg-gray-500'} text-white`}>
+                  <Card key={index} className={`${item.open ? 'bg-slate-600/80 border-2 border-green-400' : 'bg-slate-600/80 border-2 border-slate-500'}`}>
+                    <CardContent className="p-5 text-center">
+                      <Badge className={`mb-3 ${item.open ? 'bg-amber-500' : 'bg-gray-500'} text-white text-sm px-3 py-1`}>
                         {item.signal}
                       </Badge>
-                      <p className={`font-bold ${item.open ? 'text-green-400' : 'text-gray-400'}`}>
+                      <p className={`font-bold text-lg ${item.open ? 'text-green-300' : 'text-gray-300'}`}>
                         {item.status}
                       </p>
                       {item.open && (
-                        <CheckCircle className="h-4 w-4 text-green-400 mx-auto mt-2" />
+                        <CheckCircle className="h-5 w-5 text-green-400 mx-auto mt-3" />
                       )}
                     </CardContent>
                   </Card>
@@ -699,13 +753,13 @@ export default function DemoHospitalLandingPage() {
               {/* Holiday Schedule */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {holidaySchedule.map((item, index) => (
-                  <Card key={index} className="bg-slate-700 border-slate-600">
+                  <Card key={index} className="bg-slate-600/80 border-2 border-slate-500">
                     <CardContent className="p-4 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <Calendar className="h-5 w-5 text-amber-400" />
-                        <span className="font-medium">{item.holiday}</span>
+                        <span className="font-medium text-white">{item.holiday}</span>
                       </div>
-                      <Badge className={`${item.open ? 'bg-green-500' : 'bg-amber-500'} text-white`}>
+                      <Badge className={`${item.open ? 'bg-green-500' : 'bg-amber-500'} text-white px-3`}>
                         {item.status}
                       </Badge>
                     </CardContent>
@@ -713,7 +767,7 @@ export default function DemoHospitalLandingPage() {
                 ))}
               </div>
 
-              <p className="text-center text-slate-400 text-sm mt-6">
+              <p className="text-center text-slate-300 text-sm mt-6">
                 {language === 'zh-HK' 
                   ? '寵物緊急情況不會因天氣而停止。極端情況下請先致電確認。'
                   : 'Pet emergencies don\'t stop for weather. Please call ahead in extreme conditions.'}
