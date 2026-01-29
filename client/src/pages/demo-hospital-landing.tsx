@@ -244,13 +244,24 @@ export default function DemoHospitalLandingPage() {
     },
   ], [language]);
 
-  // Wait time & response stats
-  const responseStats = useMemo(() => ({
-    avgResponseTime: language === 'zh-HK' ? "3分鐘" : "3 mins",
-    avgWaitTime: language === 'zh-HK' ? "10-15分鐘" : "10-15 mins",
-    petsServedYear: "500+",
-    emergencySuccessRate: "95%"
-  }), [language]);
+  // Credibility stats
+  const credibilityStats = useMemo(() => [
+    {
+      icon: Globe,
+      value: language === 'zh-HK' ? "傳媒報導" : "Media Featured",
+      label: language === 'zh-HK' ? "蘋果日報・東方日報" : "Apple Daily • Oriental Daily"
+    },
+    {
+      icon: Heart,
+      value: language === 'zh-HK' ? "慈善夥伴" : "Charity Partner",
+      label: language === 'zh-HK' ? "愛護動物協會" : "SPCA Hong Kong"
+    },
+    {
+      icon: Clock,
+      value: "24/7",
+      label: language === 'zh-HK' ? "全天候營業" : "Always Open"
+    },
+  ], [language]);
 
   // Trust badges
   const trustBadges = useMemo(() => [
@@ -552,32 +563,20 @@ export default function DemoHospitalLandingPage() {
           </div>
         </section>
 
-        {/* Response Stats Bar */}
+        {/* Credibility Stats Bar */}
         <section className="bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <div className="grid grid-cols-3 gap-4 text-center">
-                <div className="p-2">
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <Phone className="h-4 w-4" />
-                    <span className="text-2xl font-bold">{responseStats.avgResponseTime}</span>
+                {credibilityStats.map((stat, index) => (
+                  <div key={index} className="p-2">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <stat.icon className="h-4 w-4" />
+                      <span className="text-lg md:text-xl font-bold">{stat.value}</span>
+                    </div>
+                    <p className="text-xs text-white/80 truncate">{stat.label}</p>
                   </div>
-                  <p className="text-xs text-white/80">{language === 'zh-HK' ? '平均接聽時間' : 'Avg Response Time'}</p>
-                </div>
-                <div className="p-2">
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <Timer className="h-4 w-4" />
-                    <span className="text-2xl font-bold">{responseStats.avgWaitTime}</span>
-                  </div>
-                  <p className="text-xs text-white/80">{language === 'zh-HK' ? '平均等候時間' : 'Avg Wait Time'}</p>
-                </div>
-                <div className="p-2">
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <Heart className="h-4 w-4" />
-                    <span className="text-2xl font-bold">{responseStats.petsServedYear}</span>
-                  </div>
-                  <p className="text-xs text-white/80">{language === 'zh-HK' ? '今年救治寵物' : 'Pets Saved This Year'}</p>
-                </div>
+                ))}
               </div>
             </div>
           </div>
