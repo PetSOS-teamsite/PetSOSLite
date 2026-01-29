@@ -359,17 +359,72 @@ export default function DemoHospitalLandingPage() {
                 </p>
               )}
 
-              {/* Secondary CTA */}
+              {/* Secondary CTA - Fixed visibility */}
               <Button 
                 onClick={handleDirections}
-                variant="outline"
                 size="lg"
-                className="mt-4 border-white/50 text-white hover:bg-white/10"
+                className="mt-4 bg-white/20 backdrop-blur border-2 border-white text-white hover:bg-white hover:text-red-600 font-semibold transition-all"
                 data-testid="button-directions-hero"
               >
                 <MapPin className="h-5 w-5 mr-2" />
                 {language === 'zh-HK' ? '查看地圖導航' : 'Get Directions'}
               </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* Hospital Video Banner */}
+        <section className="bg-gray-900">
+          <div className="container mx-auto px-4 py-8">
+            <div className="max-w-4xl mx-auto">
+              <div className="relative aspect-video bg-gray-800 rounded-xl overflow-hidden shadow-2xl">
+                {/* Video Placeholder - Mockup */}
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 flex items-center justify-center">
+                  <div className="text-center text-white">
+                    <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/20 flex items-center justify-center backdrop-blur">
+                      <svg className="w-10 h-10 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">
+                      {language === 'zh-HK' ? '醫院環境導覽' : 'Hospital Tour Video'}
+                    </h3>
+                    <p className="text-gray-400 text-sm max-w-md mx-auto">
+                      {language === 'zh-HK' 
+                        ? '觀看我們的24小時急症室、ICU深切治療部、手術室及住院設施'
+                        : 'Tour our 24-hour emergency room, ICU, surgery suite, and hospitalization facilities'}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Video Overlay Elements */}
+                <div className="absolute top-4 left-4">
+                  <Badge className="bg-red-600 text-white">
+                    <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block animate-pulse"></span>
+                    {language === 'zh-HK' ? '24小時運作' : '24/7 Operations'}
+                  </Badge>
+                </div>
+                
+                <div className="absolute bottom-4 left-4 right-4">
+                  <div className="flex items-center gap-4 text-white/80 text-sm">
+                    <div className="flex items-center gap-2 bg-black/50 backdrop-blur rounded-full px-3 py-1">
+                      <Activity className="h-4 w-4 text-green-400" />
+                      <span>{language === 'zh-HK' ? 'ICU 深切治療' : 'ICU Critical Care'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-black/50 backdrop-blur rounded-full px-3 py-1">
+                      <Siren className="h-4 w-4 text-red-400" />
+                      <span>{language === 'zh-HK' ? '緊急急症室' : 'Emergency Room'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Video Caption */}
+              <p className="text-center text-gray-400 text-sm mt-4">
+                {language === 'zh-HK' 
+                  ? '專業團隊 · 先進設備 · 全天候護理'
+                  : 'Professional Team · Advanced Equipment · 24/7 Care'}
+              </p>
             </div>
           </div>
         </section>
