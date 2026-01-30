@@ -247,6 +247,11 @@ export default function DemoHospitalLandingPage() {
   // Credibility stats
   const credibilityStats = useMemo(() => [
     {
+      icon: Award,
+      value: "ISFM",
+      label: language === 'zh-HK' ? "金級認證" : "Gold Standard"
+    },
+    {
       icon: Heart,
       value: language === 'zh-HK' ? "慈善夥伴" : "Charity Partner",
       label: "PUC"
@@ -260,7 +265,6 @@ export default function DemoHospitalLandingPage() {
 
   // Trust badges
   const trustBadges = useMemo(() => [
-    { name: "ISFM Gold Standard", icon: Award },
   ], []);
 
   // What to bring checklist
@@ -552,30 +556,20 @@ export default function DemoHospitalLandingPage() {
                       <ExternalLink className="h-3 w-3 text-gray-400" />
                     </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Trust Badges - Full Width */}
-              <div className="mt-6 flex flex-wrap justify-center gap-3">
-                {trustBadges.map((badge, index) => (
-                  <div key={index} className="flex items-center bg-white/15 backdrop-blur rounded-full px-3 py-1.5 text-sm">
-                    <badge.icon className="h-4 w-4 mr-1.5" />
-                    {badge.name}
+                  {/* Directions Button */}
+                  <div className="mt-4 flex justify-center md:justify-start">
+                    <Button 
+                      onClick={handleDirections}
+                      size="default"
+                      className="bg-white/20 backdrop-blur border-2 border-white text-white hover:bg-white hover:text-red-600 font-semibold transition-all"
+                      data-testid="button-directions-hero"
+                    >
+                      <MapPin className="h-4 w-4 mr-2" />
+                      {language === 'zh-HK' ? '查看地圖導航' : 'Get Directions'}
+                    </Button>
                   </div>
-                ))}
-              </div>
-
-              {/* Secondary CTA */}
-              <div className="mt-4 flex justify-center">
-                <Button 
-                  onClick={handleDirections}
-                  size="lg"
-                  className="bg-white/20 backdrop-blur border-2 border-white text-white hover:bg-white hover:text-red-600 font-semibold transition-all"
-                  data-testid="button-directions-hero"
-                >
-                  <MapPin className="h-5 w-5 mr-2" />
-                  {language === 'zh-HK' ? '查看地圖導航' : 'Get Directions'}
-                </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -585,7 +579,7 @@ export default function DemoHospitalLandingPage() {
         <section className="bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
-              <div className="grid grid-cols-2 gap-8 text-center max-w-md mx-auto">
+              <div className="grid grid-cols-3 gap-4 text-center max-w-lg mx-auto">
                 {credibilityStats.map((stat, index) => (
                   <div key={index} className="p-2">
                     <div className="flex items-center justify-center gap-2 mb-1">
