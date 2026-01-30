@@ -452,24 +452,8 @@ export default function DemoHospitalLandingPage() {
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto">
               <div className="grid md:grid-cols-2 gap-8 items-center">
-                {/* Left Column - Video */}
-                <div className="order-2 md:order-1">
-                  <div className="aspect-video bg-black/20 rounded-2xl overflow-hidden shadow-2xl border-4 border-white/20">
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-black/40 to-black/60">
-                      <div className="text-center p-6">
-                        <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/20 flex items-center justify-center">
-                          <Play className="h-10 w-10 text-white ml-1" />
-                        </div>
-                        <p className="text-white/80 text-sm">
-                          {language === 'zh-HK' ? '醫院導覽影片' : 'Hospital Tour Video'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Column - Text & Buttons */}
-                <div className="order-1 md:order-2 text-center md:text-left">
+                {/* Left Column - Text & Buttons */}
+                <div className="order-1 text-center md:text-left">
                   {/* Live Status Badge */}
                   <div className="flex justify-center md:justify-start mb-4">
                     <Badge className={`${liveStatusColor} text-white px-4 py-1 text-sm animate-pulse`} data-testid="badge-live-status">
@@ -522,7 +506,7 @@ export default function DemoHospitalLandingPage() {
                       {language === 'zh-HK' ? '立即致電' : 'Call Now'}
                     </Button>
                     <Button 
-                      onClick={handleWhatsApp}
+                      onClick={() => handleWhatsApp()}
                       size="lg"
                       className="flex-1 bg-green-500 hover:bg-green-600 text-white py-5 text-base font-bold shadow-xl"
                       data-testid="button-whatsapp-hero"
@@ -568,6 +552,22 @@ export default function DemoHospitalLandingPage() {
                       <MapPin className="h-4 w-4 mr-2" />
                       {language === 'zh-HK' ? '查看地圖導航' : 'Get Directions'}
                     </Button>
+                  </div>
+                </div>
+
+                {/* Right Column - Video */}
+                <div className="order-2">
+                  <div className="aspect-video bg-black/20 rounded-2xl overflow-hidden shadow-2xl border-4 border-white/20">
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-black/40 to-black/60">
+                      <div className="text-center p-6">
+                        <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/20 flex items-center justify-center">
+                          <Play className="h-10 w-10 text-white ml-1" />
+                        </div>
+                        <p className="text-white/80 text-sm">
+                          {language === 'zh-HK' ? '醫院導覽影片' : 'Hospital Tour Video'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
