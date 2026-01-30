@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { 
-  Phone, MessageCircle, MapPin, Clock, Shield, Star, 
+  Phone, MessageCircle, MapPin, Clock, Shield, Star, Play,
   Stethoscope, Activity, Heart, Siren, ChevronDown, ChevronUp,
   CloudRain, Car, Camera, Users, Award, CheckCircle, ExternalLink,
   AlertTriangle, Thermometer, Zap, Loader2, DollarSign, CreditCard,
@@ -444,98 +444,119 @@ export default function DemoHospitalLandingPage() {
         </div>
 
         {/* Hero Section */}
-        <section className="bg-gradient-to-br from-red-600 via-red-500 to-orange-500 text-white py-12 md:py-16">
+        <section className="bg-gradient-to-br from-red-600 via-red-500 to-orange-500 text-white py-8 md:py-12">
           <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto text-center">
-              {/* Live Status Badge */}
-              <div className="flex justify-center mb-4">
-                <Badge className={`${liveStatusColor} text-white px-4 py-1 text-sm animate-pulse`} data-testid="badge-live-status">
-                  <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block"></span>
-                  {liveStatusText}
-                </Badge>
-              </div>
-
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4" data-testid="text-hospital-name">
-                {hospitalName}
-              </h1>
-              <p className="text-xl md:text-2xl text-white/90 mb-6">
-                {language === 'zh-HK' ? '全天候守護您的毛孩' : 'Around-the-Clock Care for Your Beloved Pets'}
-              </p>
-
-              {/* Quick Stats */}
-              <div className="flex flex-wrap justify-center gap-3 mb-8">
-                <div className="flex items-center bg-white/20 backdrop-blur rounded-full px-4 py-2">
-                  <Clock className="h-5 w-5 mr-2" />
-                  <span className="font-medium">{language === 'zh-HK' ? '24小時營業' : '24/7 Open'}</span>
-                </div>
-                {hospital?.onSiteVet247 && (
-                  <div className="flex items-center bg-white/20 backdrop-blur rounded-full px-4 py-2">
-                    <Shield className="h-5 w-5 mr-2" />
-                    <span className="font-medium">{language === 'zh-HK' ? '駐場獸醫' : 'On-Site Vet'}</span>
+            <div className="max-w-6xl mx-auto">
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                {/* Left Column - Video */}
+                <div className="order-2 md:order-1">
+                  <div className="aspect-video bg-black/20 rounded-2xl overflow-hidden shadow-2xl border-4 border-white/20">
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-black/40 to-black/60">
+                      <div className="text-center p-6">
+                        <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/20 flex items-center justify-center">
+                          <Play className="h-10 w-10 text-white ml-1" />
+                        </div>
+                        <p className="text-white/80 text-sm">
+                          {language === 'zh-HK' ? '醫院導覽影片' : 'Hospital Tour Video'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                )}
-                <div className="flex items-center bg-white/20 backdrop-blur rounded-full px-4 py-2">
-                  <MapPin className="h-5 w-5 mr-2" />
-                  <span className="font-medium">{regionName}</span>
                 </div>
-                {consultationFees.day && (
-                  <div className="flex items-center bg-white/20 backdrop-blur rounded-full px-4 py-2">
-                    <DollarSign className="h-5 w-5 mr-2" />
-                    <span className="font-medium">{language === 'zh-HK' ? `診金$${consultationFees.day}起` : `From $${consultationFees.day}`}</span>
+
+                {/* Right Column - Text & Buttons */}
+                <div className="order-1 md:order-2 text-center md:text-left">
+                  {/* Live Status Badge */}
+                  <div className="flex justify-center md:justify-start mb-4">
+                    <Badge className={`${liveStatusColor} text-white px-4 py-1 text-sm animate-pulse`} data-testid="badge-live-status">
+                      <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block"></span>
+                      {liveStatusText}
+                    </Badge>
                   </div>
-                )}
-              </div>
 
-              {/* Primary CTAs */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-lg mx-auto">
-                <Button 
-                  onClick={handleCall}
-                  size="lg"
-                  className="flex-1 bg-white text-red-600 hover:bg-gray-100 py-6 text-lg font-bold shadow-xl"
-                  data-testid="button-call-hero"
-                  disabled={!hospital?.phone}
-                >
-                  <Phone className="h-5 w-5 mr-2" />
-                  {language === 'zh-HK' ? '立即致電' : 'Call Now'}
-                </Button>
-                <Button 
-                  onClick={handleWhatsApp}
-                  size="lg"
-                  className="flex-1 bg-green-500 hover:bg-green-600 text-white py-6 text-lg font-bold shadow-xl"
-                  data-testid="button-whatsapp-hero"
-                  disabled={!hospital?.whatsapp && !hospital?.phone}
-                >
-                  <MessageCircle className="h-5 w-5 mr-2" />
-                  WhatsApp
-                </Button>
-              </div>
+                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3" data-testid="text-hospital-name">
+                    {hospitalName}
+                  </h1>
+                  <p className="text-lg md:text-xl text-white/90 mb-5">
+                    {language === 'zh-HK' ? '全天候守護您的毛孩' : 'Around-the-Clock Care for Your Beloved Pets'}
+                  </p>
 
-              {/* Phone Number Display */}
-              {hospital?.phone && (
-                <p className="mt-4 text-white/80 text-lg font-medium">
-                  {hospital.phone}
-                </p>
-              )}
-
-              {/* Google Reviews Badge */}
-              <div className="mt-6 flex justify-center" data-testid="google-reviews">
-                <div className="bg-white/95 backdrop-blur rounded-full px-5 py-2 shadow-lg flex items-center gap-3">
-                  <div className="flex items-center">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star 
-                        key={star} 
-                        className={`h-4 w-4 ${star <= Math.floor(googleReviews.rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
-                      />
-                    ))}
+                  {/* Quick Stats */}
+                  <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-6">
+                    <div className="flex items-center bg-white/20 backdrop-blur rounded-full px-3 py-1.5 text-sm">
+                      <Clock className="h-4 w-4 mr-1.5" />
+                      <span className="font-medium">{language === 'zh-HK' ? '24小時' : '24/7'}</span>
+                    </div>
+                    {hospital?.onSiteVet247 && (
+                      <div className="flex items-center bg-white/20 backdrop-blur rounded-full px-3 py-1.5 text-sm">
+                        <Shield className="h-4 w-4 mr-1.5" />
+                        <span className="font-medium">{language === 'zh-HK' ? '駐場獸醫' : 'On-Site Vet'}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center bg-white/20 backdrop-blur rounded-full px-3 py-1.5 text-sm">
+                      <MapPin className="h-4 w-4 mr-1.5" />
+                      <span className="font-medium">{regionName}</span>
+                    </div>
+                    {consultationFees.day && (
+                      <div className="flex items-center bg-white/20 backdrop-blur rounded-full px-3 py-1.5 text-sm">
+                        <DollarSign className="h-4 w-4 mr-1.5" />
+                        <span className="font-medium">{language === 'zh-HK' ? `$${consultationFees.day}起` : `From $${consultationFees.day}`}</span>
+                      </div>
+                    )}
                   </div>
-                  <span className="text-gray-900 font-bold">{googleReviews.rating}</span>
-                  <span className="text-gray-600 text-sm">({googleReviews.totalReviews} {language === 'zh-HK' ? '評價' : 'reviews'})</span>
-                  <ExternalLink className="h-3 w-3 text-gray-400" />
+
+                  {/* Primary CTAs */}
+                  <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto md:mx-0">
+                    <Button 
+                      onClick={handleCall}
+                      size="lg"
+                      className="flex-1 bg-white text-red-600 hover:bg-gray-100 py-5 text-base font-bold shadow-xl"
+                      data-testid="button-call-hero"
+                      disabled={!hospital?.phone}
+                    >
+                      <Phone className="h-5 w-5 mr-2" />
+                      {language === 'zh-HK' ? '立即致電' : 'Call Now'}
+                    </Button>
+                    <Button 
+                      onClick={handleWhatsApp}
+                      size="lg"
+                      className="flex-1 bg-green-500 hover:bg-green-600 text-white py-5 text-base font-bold shadow-xl"
+                      data-testid="button-whatsapp-hero"
+                      disabled={!hospital?.whatsapp && !hospital?.phone}
+                    >
+                      <MessageCircle className="h-5 w-5 mr-2" />
+                      WhatsApp
+                    </Button>
+                  </div>
+
+                  {/* Phone Number Display */}
+                  {hospital?.phone && (
+                    <p className="mt-3 text-white/80 text-base font-medium text-center md:text-left">
+                      {hospital.phone}
+                    </p>
+                  )}
+
+                  {/* Google Reviews Badge */}
+                  <div className="mt-5 flex justify-center md:justify-start" data-testid="google-reviews">
+                    <div className="bg-white/95 backdrop-blur rounded-full px-4 py-2 shadow-lg flex items-center gap-2">
+                      <div className="flex items-center">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star 
+                            key={star} 
+                            className={`h-3.5 w-3.5 ${star <= Math.floor(googleReviews.rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
+                          />
+                        ))}
+                      </div>
+                      <span className="text-gray-900 font-bold text-sm">{googleReviews.rating}</span>
+                      <span className="text-gray-600 text-xs">({googleReviews.totalReviews} {language === 'zh-HK' ? '評價' : 'reviews'})</span>
+                      <ExternalLink className="h-3 w-3 text-gray-400" />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Trust Badges */}
-              <div className="mt-4 flex flex-wrap justify-center gap-3">
+              {/* Trust Badges - Full Width */}
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
                 {trustBadges.map((badge, index) => (
                   <div key={index} className="flex items-center bg-white/15 backdrop-blur rounded-full px-3 py-1.5 text-sm">
                     <badge.icon className="h-4 w-4 mr-1.5" />
@@ -545,15 +566,17 @@ export default function DemoHospitalLandingPage() {
               </div>
 
               {/* Secondary CTA */}
-              <Button 
-                onClick={handleDirections}
-                size="lg"
-                className="mt-6 bg-white/20 backdrop-blur border-2 border-white text-white hover:bg-white hover:text-red-600 font-semibold transition-all"
-                data-testid="button-directions-hero"
-              >
-                <MapPin className="h-5 w-5 mr-2" />
-                {language === 'zh-HK' ? '查看地圖導航' : 'Get Directions'}
-              </Button>
+              <div className="mt-4 flex justify-center">
+                <Button 
+                  onClick={handleDirections}
+                  size="lg"
+                  className="bg-white/20 backdrop-blur border-2 border-white text-white hover:bg-white hover:text-red-600 font-semibold transition-all"
+                  data-testid="button-directions-hero"
+                >
+                  <MapPin className="h-5 w-5 mr-2" />
+                  {language === 'zh-HK' ? '查看地圖導航' : 'Get Directions'}
+                </Button>
+              </div>
             </div>
           </div>
         </section>
