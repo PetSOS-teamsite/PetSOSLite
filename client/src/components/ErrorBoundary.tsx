@@ -14,7 +14,6 @@ interface State {
   error?: Error;
   isRecovering: boolean;
   recoveryAttempted: boolean;
-  countdown: number;
 }
 
 // Detect if error is caused by stale cache/bundle issues (strict patterns only)
@@ -88,45 +87,13 @@ function forceReload(): void {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  private countdownTimer: ReturnType<typeof setInterval> | null = null;
-
   constructor(props: Props) {
     super(props);
     this.state = { 
       hasError: false, 
       isRecovering: false,
       recoveryAttempted: false,
-      countdown: 3,
     };
-  }
-
-  componentDidMount() {
-    // If already in error state on mount (shouldn't happen, but guard)
-  }
-
-  componentDidUpdate(_prevProps: Props, prevState: State) {
-    // Start auto-reload countdown when error is first shown
-    if (this.state.hasError && !prevState.hasError && !this.state.isRecovering) {
-      this.startAutoReloadCountdown();
-    }
-  }
-
-  componentWillUnmount() {
-    if (this.countdownTimer) clearInterval(this.countdownTimer);
-  }
-
-  startAutoReloadCountdown() {
-    this.setState({ countdown: 3 });
-    this.countdownTimer = setInterval(() => {
-      this.setState(prev => {
-        if (prev.countdown <= 1) {
-          clearInterval(this.countdownTimer!);
-          this.handleManualRetry();
-          return { countdown: 0 };
-        }
-        return { countdown: prev.countdown - 1 };
-      });
-    }, 1000);
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
@@ -151,8 +118,8 @@ export class ErrorBoundary extends Component<Props, State> {
       },
     });
 
-    // Auto-recover from stale cache errors (only once per session)
-    if (isStaleCache && !this.state.recoveryAttempted && !hasAttemptedRecovery()) {
+    // Silently auto-recover from stale cache errors — no screen shown
+    if (isStaleCache) {
       this.attemptAutoRecovery();
     }
   }
@@ -187,62 +154,44 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
-      // Show recovery spinner if auto-recovering
+      // Silently recovering (stale cache) — show blank screen while reloading
       if (this.state.isRecovering) {
-        return (
-          <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-red-50 to-white dark:from-gray-900 dark:to-gray-800">
-            <Loader2 className="h-12 w-12 text-red-500 animate-spin mb-4" />
-            <p className="text-lg text-gray-700 dark:text-gray-300">
-              Reloading emergency tools...
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-              正在重新載入...
-            </p>
-          </div>
-        );
+        return <div className="min-h-screen bg-white" />;
       }
 
-      // Emergency-friendly fallback (no technical jargon)
+      // Non-cache error fallback
       return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
           <Card className="max-w-md w-full border-blue-200 dark:border-blue-800">
             <CardHeader className="text-center">
               <div className="flex justify-center mb-2">
-                <RefreshCw className="h-12 w-12 text-blue-500 animate-spin" />
+                <Loader2 className="h-12 w-12 text-blue-500 animate-spin" />
               </div>
               <CardTitle className="text-xl text-blue-700 dark:text-blue-400">
-                Reloading{this.state.countdown > 0 ? ` in ${this.state.countdown}…` : '…'}
+                Something went wrong
               </CardTitle>
               <CardTitle className="text-lg text-gray-600 dark:text-gray-400">
-                {this.state.countdown > 0 ? `${this.state.countdown} 秒後自動重新載入…` : '正在重新載入…'}
+                發生錯誤
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {/* Primary action - Reload now */}
               <Button 
                 onClick={this.handleManualRetry} 
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white h-14 text-lg"
                 data-testid="button-reload"
               >
                 <RefreshCw className="h-5 w-5 mr-2" />
-                Reload Now / 立即重新載入
+                Try Again / 重試
               </Button>
-
-              {/* Secondary action - Go Home */}
               <Button 
-                onClick={() => {
-                  clearAllCaches().then(() => {
-                    window.location.href = '/';
-                  });
-                }} 
+                onClick={() => { clearAllCaches().then(() => { window.location.href = '/'; }); }} 
                 variant="outline"
                 className="w-full h-12"
                 data-testid="button-home"
               >
                 <Home className="h-5 w-5 mr-2" />
-                Go Home 返回主頁
+                Go Home / 返回主頁
               </Button>
-
             </CardContent>
           </Card>
         </div>
