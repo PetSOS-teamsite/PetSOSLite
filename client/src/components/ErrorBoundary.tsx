@@ -1,8 +1,8 @@
 import { Component, ReactNode } from 'react';
 import { Sentry } from '@/lib/sentry';
-import { AlertTriangle, Phone, RefreshCw, Home, Loader2 } from 'lucide-react';
+import { RefreshCw, Home, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 interface Props {
   children: ReactNode;
@@ -14,6 +14,7 @@ interface State {
   error?: Error;
   isRecovering: boolean;
   recoveryAttempted: boolean;
+  countdown: number;
 }
 
 // Detect if error is caused by stale cache/bundle issues (strict patterns only)
@@ -87,13 +88,45 @@ function forceReload(): void {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
+  private countdownTimer: ReturnType<typeof setInterval> | null = null;
+
   constructor(props: Props) {
     super(props);
     this.state = { 
       hasError: false, 
       isRecovering: false,
-      recoveryAttempted: false 
+      recoveryAttempted: false,
+      countdown: 3,
     };
+  }
+
+  componentDidMount() {
+    // If already in error state on mount (shouldn't happen, but guard)
+  }
+
+  componentDidUpdate(_prevProps: Props, prevState: State) {
+    // Start auto-reload countdown when error is first shown
+    if (this.state.hasError && !prevState.hasError && !this.state.isRecovering) {
+      this.startAutoReloadCountdown();
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.countdownTimer) clearInterval(this.countdownTimer);
+  }
+
+  startAutoReloadCountdown() {
+    this.setState({ countdown: 3 });
+    this.countdownTimer = setInterval(() => {
+      this.setState(prev => {
+        if (prev.countdown <= 1) {
+          clearInterval(this.countdownTimer!);
+          this.handleManualRetry();
+          return { countdown: 0 };
+        }
+        return { countdown: prev.countdown - 1 };
+      });
+    }, 1000);
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
@@ -175,38 +208,24 @@ export class ErrorBoundary extends Component<Props, State> {
           <Card className="max-w-md w-full border-blue-200 dark:border-blue-800">
             <CardHeader className="text-center">
               <div className="flex justify-center mb-2">
-                <RefreshCw className="h-12 w-12 text-blue-500" />
+                <RefreshCw className="h-12 w-12 text-blue-500 animate-spin" />
               </div>
               <CardTitle className="text-xl text-blue-700 dark:text-blue-400">
-                Almost there! Please reload
+                Reloading{this.state.countdown > 0 ? ` in ${this.state.countdown}…` : '…'}
               </CardTitle>
               <CardTitle className="text-lg text-gray-600 dark:text-gray-400">
-                快完成了！請重新載入
+                {this.state.countdown > 0 ? `${this.state.countdown} 秒後自動重新載入…` : '正在重新載入…'}
               </CardTitle>
-              <CardDescription className="mt-3 text-base">
-                Your emergency request is saved. Tap "Reload" to continue to the broadcast page.
-              </CardDescription>
-              <CardDescription className="text-base">
-                您的緊急請求已保存。點擊「重新載入」繼續前往廣播頁面。
-              </CardDescription>
-              <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                <p className="text-sm text-green-700 dark:text-green-400 font-medium">
-                  ✓ This is NOT an error - your data is safe!
-                </p>
-                <p className="text-sm text-green-600 dark:text-green-500">
-                  ✓ 這不是錯誤 - 您的資料已安全保存！
-                </p>
-              </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              {/* Primary action - Reload */}
+              {/* Primary action - Reload now */}
               <Button 
                 onClick={this.handleManualRetry} 
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white h-14 text-lg"
                 data-testid="button-reload"
               >
                 <RefreshCw className="h-5 w-5 mr-2" />
-                Continue / Reload 繼續 / 重新載入
+                Reload Now / 立即重新載入
               </Button>
 
               {/* Secondary action - Go Home */}
@@ -224,23 +243,6 @@ export class ErrorBoundary extends Component<Props, State> {
                 Go Home 返回主頁
               </Button>
 
-              {/* Alternative - Find 24-hour clinics */}
-              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-3">
-                  Need immediate help? Find a 24-hour clinic:
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-3">
-                  需要即時幫助？尋找24小時診所：
-                </p>
-                <a 
-                  href="/clinics"
-                  className="flex items-center justify-center gap-2 w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium"
-                  data-testid="link-find-clinics"
-                >
-                  <Home className="h-5 w-5" />
-                  Find 24hr Clinics 尋找24小時診所
-                </a>
-              </div>
             </CardContent>
           </Card>
         </div>
