@@ -3854,16 +3854,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Fetch phone number details from Meta
       let phoneInfo = null;
+      let tokenError: string | null = null;
       try {
         const phoneRes = await fetch(`${apiUrl}/${phoneNumberId}?fields=display_phone_number,verified_name,quality_rating,platform_type,status`, {
           headers: { 'Authorization': `Bearer ${accessToken}` },
         });
-        if (phoneRes.ok) phoneInfo = await phoneRes.json();
-      } catch (e) { /* ignore */ }
+        const phoneData = await phoneRes.json();
+        if (phoneRes.ok) {
+          phoneInfo = phoneData;
+        } else {
+          // Surface the exact Meta error (e.g. token expired)
+          tokenError = phoneData?.error?.message || `HTTP ${phoneRes.status}`;
+          const isExpired = phoneData?.error?.code === 190;
+          if (isExpired) tokenError = `TOKEN_EXPIRED: ${tokenError}`;
+        }
+      } catch (e) { /* network error */ }
 
       // Fetch approved templates from Meta
       let templates: any[] = [];
-      if (businessAccountId) {
+      let templateError: string | null = null;
+      if (businessAccountId && !tokenError) {
         try {
           const tplRes = await fetch(`${apiUrl}/${businessAccountId}/message_templates?limit=50&fields=name,status,language,components`, {
             headers: { 'Authorization': `Bearer ${accessToken}` },
@@ -3871,11 +3881,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (tplRes.ok) {
             const tplData = await tplRes.json();
             templates = tplData.data || [];
+          } else {
+            const errData = await tplRes.json();
+            templateError = errData?.error?.message || `HTTP ${tplRes.status}`;
           }
         } catch (e) { /* ignore */ }
       }
 
-      res.json({ credentialStatus, phoneInfo, templates });
+      res.json({ credentialStatus, phoneInfo, templates, tokenError, templateError });
     } catch (error) {
       res.status(500).json({ error: 'Internal server error', details: String(error) });
     }

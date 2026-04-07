@@ -101,6 +101,8 @@ export default function AdminDiagnosticsPage() {
   const cred = waStatus?.credentialStatus;
   const phoneInfo = waStatus?.phoneInfo;
   const liveTemplates: any[] = waStatus?.templates || [];
+  const tokenError: string | null = waStatus?.tokenError || null;
+  const isTokenExpired = !!tokenError?.startsWith("TOKEN_EXPIRED");
 
   // Cross-reference required vs live templates
   const templateStatus = REQUIRED_TEMPLATES.map((req) => {
@@ -108,8 +110,8 @@ export default function AdminDiagnosticsPage() {
     return { ...req, live, status: live?.status || "missing" };
   });
 
-  const allTemplatesApproved = templateStatus.every((t) => t.status === "APPROVED");
-  const credentialsOk = cred?.hasAccessToken && cred?.hasPhoneNumberId && cred?.hasBusinessAccountId;
+  const allTemplatesApproved = !isTokenExpired && templateStatus.every((t) => t.status === "APPROVED");
+  const credentialsOk = cred?.hasAccessToken && cred?.hasPhoneNumberId && cred?.hasBusinessAccountId && !isTokenExpired;
   const phoneOk = phoneInfo && !phoneInfo.error;
 
   // Webhook URL
@@ -128,6 +130,38 @@ export default function AdminDiagnosticsPage() {
             Verify credentials, templates, and test live messages before going live.
           </p>
         </div>
+
+        {/* ─── CRITICAL: Token Expired Banner ─── */}
+        {isTokenExpired && (
+          <Alert className="border-red-500 bg-red-50 dark:bg-red-950/40" data-testid="alert-token-expired">
+            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+            <AlertDescription>
+              <p className="font-bold text-red-700 dark:text-red-400 text-base mb-2">
+                🚨 Access Token Expired — No messages can be sent until this is fixed
+              </p>
+              <p className="text-sm text-red-700 dark:text-red-400 mb-3">
+                {tokenError?.replace("TOKEN_EXPIRED: ", "")}
+              </p>
+              <div className="space-y-2 text-sm">
+                <p className="font-semibold text-gray-800 dark:text-gray-200">How to fix — get a permanent System User token:</p>
+                <ol className="list-decimal ml-4 space-y-1 text-gray-700 dark:text-gray-300">
+                  <li>Go to <a href="https://business.facebook.com/settings/system-users/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline inline-flex items-center gap-0.5">Meta Business Settings → System Users <ExternalLink className="h-3 w-3" /></a></li>
+                  <li>Select (or create) a System User with <strong>ADMIN</strong> role</li>
+                  <li>Click <strong>"Generate New Token"</strong> → select your WhatsApp app</li>
+                  <li>Grant permissions: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded text-xs">whatsapp_business_messaging</code> and <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded text-xs">whatsapp_business_management</code></li>
+                  <li>Set expiry to <strong>"Never"</strong> (System User tokens can be permanent)</li>
+                  <li>Copy the token and update the <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded text-xs">WHATSAPP_ACCESS_TOKEN</code> secret in Replit</li>
+                </ol>
+                <a href="https://business.facebook.com/settings/system-users/" target="_blank" rel="noopener noreferrer">
+                  <Button size="sm" className="mt-2 bg-red-600 hover:bg-red-700 text-white gap-1">
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Open Meta Business Settings
+                  </Button>
+                </a>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* ─── Launch Readiness Summary ─── */}
         <Card>
@@ -151,7 +185,11 @@ export default function AdminDiagnosticsPage() {
                   {
                     label: "API credentials set",
                     ok: !!credentialsOk,
-                    detail: credentialsOk ? "Token, Phone ID & Business Account ID all present" : "One or more credentials missing — see Credentials section below",
+                    detail: isTokenExpired
+                      ? "Token expired — generate a new System User token in Meta Business Settings"
+                      : credentialsOk
+                      ? "Token, Phone ID & Business Account ID all present"
+                      : "One or more credentials missing — see Credentials section below",
                   },
                   {
                     label: "Phone number verified",
@@ -168,9 +206,11 @@ export default function AdminDiagnosticsPage() {
                       : `${templateStatus.filter((t) => t.status !== "APPROVED").length} template(s) not yet approved`,
                   },
                   {
-                    label: "Webhook configured",
+                    label: "Webhook verify token set",
                     ok: !!cred?.hasWebhookToken,
-                    detail: cred?.hasWebhookToken ? `URL: ${webhookUrl}` : "WHATSAPP_WEBHOOK_VERIFY_TOKEN not set",
+                    detail: cred?.hasWebhookToken
+                      ? `Webhook URL: ${webhookUrl}`
+                      : "WHATSAPP_WEBHOOK_VERIFY_TOKEN secret not set — hospitals cannot reply until this is configured. Add any random string as this secret, then register the same value in Meta App → WhatsApp → Configuration.",
                   },
                 ].map((item) => (
                   <div key={item.label} className="flex items-start gap-3 py-1.5">
