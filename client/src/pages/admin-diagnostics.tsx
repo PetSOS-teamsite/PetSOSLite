@@ -114,8 +114,8 @@ export default function AdminDiagnosticsPage() {
   const credentialsOk = cred?.hasAccessToken && cred?.hasPhoneNumberId && cred?.hasBusinessAccountId && !isTokenExpired;
   const phoneOk = phoneInfo && !phoneInfo.error;
 
-  // Webhook URL
-  const webhookUrl = `${window.location.origin}/api/whatsapp/webhook`;
+  // Webhook URL — matches the actual route registered in server/routes.ts
+  const webhookUrl = `https://petsos.site/api/webhooks/whatsapp`;
 
   return (
     <>
