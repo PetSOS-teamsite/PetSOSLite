@@ -6899,6 +6899,101 @@ PetSOS 現已準備好幫助您在香港尋找 24 小時獸醫服務。
     }
   });
 
+  // Daily Emergency Report (admin only) - grouped by hospital
+  app.get("/api/admin/daily-report", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const dateParam = req.query.date as string;
+      const reportDate = dateParam ? new Date(dateParam) : new Date();
+
+      // Build start/end of day bounds
+      const startOfDay = new Date(reportDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(reportDate);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      // Fetch all emergency requests and filter by date
+      const allRequests = await storage.getAllEmergencyRequests();
+      const dayRequests = allRequests.filter(r => {
+        const created = new Date(r.createdAt);
+        return created >= startOfDay && created <= endOfDay;
+      });
+
+      // Fetch hospitals map
+      const allHospitals = await storage.getAllHospitals();
+      const hospitalMap: Record<string, any> = {};
+      for (const h of allHospitals) {
+        hospitalMap[h.id] = h;
+      }
+
+      // For each request, get all messages (broadcasts to hospitals)
+      const hospitalEnquiriesMap: Record<string, any> = {};
+
+      for (const request of dayRequests) {
+        const messages = await storage.getMessagesByEmergencyRequest(request.id);
+
+        // Group messages by hospital
+        for (const msg of messages) {
+          const hospitalId = msg.hospitalId;
+          if (!hospitalEnquiriesMap[hospitalId]) {
+            const hospital = hospitalMap[hospitalId];
+            hospitalEnquiriesMap[hospitalId] = {
+              hospitalId,
+              hospitalNameEn: hospital?.nameEn || 'Unknown Hospital',
+              hospitalNameZh: hospital?.nameZh || '',
+              hospitalAddress: hospital?.addressEn || '',
+              hospitalPhone: hospital?.phone || '',
+              hospitalWhatsapp: hospital?.whatsapp || '',
+              enquiries: [],
+            };
+          }
+
+          // Avoid duplicate enquiry entries for same request+hospital
+          const alreadyAdded = hospitalEnquiriesMap[hospitalId].enquiries.find(
+            (e: any) => e.requestId === request.id
+          );
+          if (!alreadyAdded) {
+            hospitalEnquiriesMap[hospitalId].enquiries.push({
+              requestId: request.id,
+              time: request.createdAt,
+              symptom: request.symptom,
+              aiAnalyzedSymptoms: request.aiAnalyzedSymptoms,
+              location: request.manualLocation || (
+                request.locationLatitude && request.locationLongitude
+                  ? `${request.locationLatitude}, ${request.locationLongitude}`
+                  : null
+              ),
+              contactName: request.contactName,
+              contactPhone: request.contactPhone,
+              petSpecies: request.petSpecies,
+              petBreed: request.petBreed,
+              petAge: request.petAge,
+              requestStatus: request.status,
+              messageStatus: msg.status,
+              messageType: msg.messageType,
+              sentAt: msg.sentAt,
+              deliveredAt: msg.deliveredAt,
+              readAt: msg.readAt,
+            });
+          }
+        }
+      }
+
+      const hospitalReports = Object.values(hospitalEnquiriesMap).sort((a: any, b: any) =>
+        a.hospitalNameEn.localeCompare(b.hospitalNameEn)
+      );
+
+      res.json({
+        date: startOfDay.toISOString().split('T')[0],
+        totalEnquiries: dayRequests.length,
+        totalHospitalsContacted: hospitalReports.length,
+        hospitalReports,
+      });
+    } catch (error) {
+      console.error("Error generating daily report:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
