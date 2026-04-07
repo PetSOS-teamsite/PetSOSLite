@@ -21,7 +21,9 @@ __export(schema_exports, {
   emergencyRequests: () => emergencyRequests,
   featureFlags: () => featureFlags,
   hkHolidays: () => hkHolidays,
+  hospitalChangeLogs: () => hospitalChangeLogs,
   hospitalConsultFees: () => hospitalConsultFees,
+  hospitalEmergencyResponses: () => hospitalEmergencyResponses,
   hospitalEmergencyStatus: () => hospitalEmergencyStatus,
   hospitalPingLogs: () => hospitalPingLogs,
   hospitalPingState: () => hospitalPingState,
@@ -35,7 +37,9 @@ __export(schema_exports, {
   insertEmergencyRequestSchema: () => insertEmergencyRequestSchema,
   insertFeatureFlagSchema: () => insertFeatureFlagSchema,
   insertHkHolidaySchema: () => insertHkHolidaySchema,
+  insertHospitalChangeLogSchema: () => insertHospitalChangeLogSchema,
   insertHospitalConsultFeeSchema: () => insertHospitalConsultFeeSchema,
+  insertHospitalEmergencyResponseSchema: () => insertHospitalEmergencyResponseSchema,
   insertHospitalEmergencyStatusSchema: () => insertHospitalEmergencyStatusSchema,
   insertHospitalPingLogSchema: () => insertHospitalPingLogSchema,
   insertHospitalPingStateSchema: () => insertHospitalPingStateSchema,
@@ -87,7 +91,7 @@ import { customType } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-var geography, sessions, notificationPreferencesSchema, defaultNotificationPreferences, STORAGE_QUOTA, users, insertUserSchema, pets, insertPetSchema, countries, insertCountrySchema, regions, insertRegionSchema, petBreeds, insertPetBreedSchema, clinics, insertClinicSchema, emergencyRequests, insertEmergencyRequestSchema, hospitals, insertHospitalSchema, messages, insertMessageSchema, featureFlags, insertFeatureFlagSchema, auditLogs, insertAuditLogSchema, privacyConsents, insertPrivacyConsentSchema, translations, insertTranslationSchema, hospitalConsultFees, insertHospitalConsultFeeSchema, hospitalUpdates, insertHospitalUpdateSchema, petMedicalRecords, insertPetMedicalRecordSchema, petMedicalSharingConsents, insertPetMedicalSharingConsentSchema, pushSubscriptions, insertPushSubscriptionSchema, notificationBroadcasts, insertNotificationBroadcastSchema, clinicReviews, insertClinicReviewSchema, whatsappConversations, insertWhatsappConversationSchema, whatsappChatMessages, insertWhatsappChatMessageSchema, typhoonAlerts, insertTyphoonAlertSchema, hkHolidays, insertHkHolidaySchema, hospitalEmergencyStatus, insertHospitalEmergencyStatusSchema, typhoonNotificationQueue, insertTyphoonNotificationQueueSchema, userEmergencySubscriptions, insertUserEmergencySubscriptionSchema, vetConsultants, insertVetConsultantSchema, verifiedContentItems, insertVerifiedContentItemSchema, contentVerifications, insertContentVerificationSchema, vetApplications, insertVetApplicationSchema, hospitalPingState, insertHospitalPingStateSchema, hospitalPingLogs, insertHospitalPingLogSchema;
+var geography, sessions, notificationPreferencesSchema, defaultNotificationPreferences, STORAGE_QUOTA, users, insertUserSchema, pets, insertPetSchema, countries, insertCountrySchema, regions, insertRegionSchema, petBreeds, insertPetBreedSchema, clinics, insertClinicSchema, emergencyRequests, insertEmergencyRequestSchema, hospitals, insertHospitalSchema, hospitalChangeLogs, insertHospitalChangeLogSchema, messages, insertMessageSchema, featureFlags, insertFeatureFlagSchema, auditLogs, insertAuditLogSchema, privacyConsents, insertPrivacyConsentSchema, translations, insertTranslationSchema, hospitalConsultFees, insertHospitalConsultFeeSchema, hospitalUpdates, insertHospitalUpdateSchema, petMedicalRecords, insertPetMedicalRecordSchema, petMedicalSharingConsents, insertPetMedicalSharingConsentSchema, pushSubscriptions, insertPushSubscriptionSchema, notificationBroadcasts, insertNotificationBroadcastSchema, clinicReviews, insertClinicReviewSchema, whatsappConversations, insertWhatsappConversationSchema, whatsappChatMessages, insertWhatsappChatMessageSchema, typhoonAlerts, insertTyphoonAlertSchema, hkHolidays, insertHkHolidaySchema, hospitalEmergencyStatus, insertHospitalEmergencyStatusSchema, typhoonNotificationQueue, insertTyphoonNotificationQueueSchema, userEmergencySubscriptions, insertUserEmergencySubscriptionSchema, vetConsultants, insertVetConsultantSchema, verifiedContentItems, insertVerifiedContentItemSchema, contentVerifications, insertContentVerificationSchema, vetApplications, insertVetApplicationSchema, hospitalPingState, insertHospitalPingStateSchema, hospitalPingLogs, insertHospitalPingLogSchema, hospitalEmergencyResponses, insertHospitalEmergencyResponseSchema;
 var init_schema = __esm({
   "shared/schema.ts"() {
     "use strict";
@@ -507,6 +511,34 @@ var init_schema = __esm({
       // Auto-populated from lat/lng
       createdAt: true,
       updatedAt: true
+    });
+    hospitalChangeLogs = pgTable("hospital_change_logs", {
+      id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+      hospitalId: varchar("hospital_id").notNull().references(() => hospitals.id, { onDelete: "cascade" }),
+      fieldName: text("field_name").notNull(),
+      // The field that was changed (e.g., "phone", "open247")
+      oldValue: text("old_value"),
+      // Previous value (stringified)
+      newValue: text("new_value"),
+      // New value (stringified)
+      changedBy: text("changed_by"),
+      // Name of person who made the change
+      changeSource: text("change_source").notNull(),
+      // "access_code" | "verification_code" | "admin" | "api"
+      changeType: text("change_type").notNull().default("update"),
+      // "update" | "confirm" | "status_change"
+      ipAddress: text("ip_address"),
+      // Optional IP for audit
+      userAgent: text("user_agent"),
+      // Optional user agent for audit
+      createdAt: timestamp("created_at").notNull().defaultNow()
+    }, (table) => [
+      index("idx_hospital_change_log_hospital").on(table.hospitalId),
+      index("idx_hospital_change_log_created").on(table.createdAt)
+    ]);
+    insertHospitalChangeLogSchema = createInsertSchema(hospitalChangeLogs).omit({
+      id: true,
+      createdAt: true
     });
     messages = pgTable("messages", {
       id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1182,6 +1214,23 @@ var init_schema = __esm({
       index("idx_ping_logs_created").on(table.createdAt)
     ]);
     insertHospitalPingLogSchema = createInsertSchema(hospitalPingLogs).omit({
+      id: true,
+      createdAt: true
+    });
+    hospitalEmergencyResponses = pgTable("hospital_emergency_responses", {
+      id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+      emergencyRequestId: varchar("emergency_request_id").notNull().references(() => emergencyRequests.id, { onDelete: "cascade" }),
+      hospitalId: varchar("hospital_id").notNull().references(() => hospitals.id, { onDelete: "cascade" }),
+      message: text("message").notNull(),
+      responseType: varchar("response_type", { length: 32 }).default("other"),
+      // 'can_accept' | 'full' | 'call_requested' | 'other'
+      respondedAt: timestamp("responded_at").notNull().defaultNow(),
+      createdAt: timestamp("created_at").notNull().defaultNow()
+    }, (table) => [
+      index("idx_emergency_responses_request").on(table.emergencyRequestId),
+      index("idx_emergency_responses_hospital").on(table.hospitalId)
+    ]);
+    insertHospitalEmergencyResponseSchema = createInsertSchema(hospitalEmergencyResponses).omit({
       id: true,
       createdAt: true
     });
@@ -2591,6 +2640,56 @@ var DatabaseStorage = class {
   async getHospitalPingLogs(hospitalId, limit = 50) {
     return await db.select().from(hospitalPingLogs).where(eq(hospitalPingLogs.hospitalId, hospitalId)).orderBy(desc(hospitalPingLogs.createdAt)).limit(limit);
   }
+  // Hospital Change Logs (Audit Trail)
+  async createHospitalChangeLog(data) {
+    const result = await db.insert(hospitalChangeLogs).values(data).returning();
+    return result[0];
+  }
+  async createHospitalChangeLogs(data) {
+    if (data.length === 0) return [];
+    const result = await db.insert(hospitalChangeLogs).values(data).returning();
+    return result;
+  }
+  async getHospitalChangeLogs(hospitalId, limit = 50) {
+    return await db.select().from(hospitalChangeLogs).where(eq(hospitalChangeLogs.hospitalId, hospitalId)).orderBy(desc(hospitalChangeLogs.createdAt)).limit(limit);
+  }
+  async getRecentHospitalChangeLogs(limit = 100) {
+    const results = await db.select({
+      id: hospitalChangeLogs.id,
+      hospitalId: hospitalChangeLogs.hospitalId,
+      fieldName: hospitalChangeLogs.fieldName,
+      oldValue: hospitalChangeLogs.oldValue,
+      newValue: hospitalChangeLogs.newValue,
+      changedBy: hospitalChangeLogs.changedBy,
+      changeSource: hospitalChangeLogs.changeSource,
+      changeType: hospitalChangeLogs.changeType,
+      ipAddress: hospitalChangeLogs.ipAddress,
+      userAgent: hospitalChangeLogs.userAgent,
+      createdAt: hospitalChangeLogs.createdAt,
+      hospitalName: hospitals.nameEn
+    }).from(hospitalChangeLogs).leftJoin(hospitals, eq(hospitalChangeLogs.hospitalId, hospitals.id)).orderBy(desc(hospitalChangeLogs.createdAt)).limit(limit);
+    return results;
+  }
+  // Hospital Emergency Responses
+  async createHospitalEmergencyResponse(data) {
+    const result = await db.insert(hospitalEmergencyResponses).values(data).returning();
+    return result[0];
+  }
+  async getHospitalEmergencyResponsesByEmergencyId(emergencyRequestId) {
+    return await db.select().from(hospitalEmergencyResponses).where(eq(hospitalEmergencyResponses.emergencyRequestId, emergencyRequestId)).orderBy(desc(hospitalEmergencyResponses.respondedAt));
+  }
+  async getActiveEmergencyForHospital(hospitalId, withinHours = 24) {
+    const cutoff = new Date(Date.now() - withinHours * 60 * 60 * 1e3);
+    const recentMessages = await db.select().from(messages).where(
+      and(
+        eq(messages.hospitalId, hospitalId),
+        gte(messages.createdAt, cutoff)
+      )
+    ).orderBy(desc(messages.createdAt)).limit(1);
+    if (recentMessages.length === 0) return void 0;
+    const request = await db.select().from(emergencyRequests).where(eq(emergencyRequests.id, recentMessages[0].emergencyRequestId)).limit(1);
+    return request[0];
+  }
 };
 var storage = new DatabaseStorage();
 
@@ -2619,6 +2718,33 @@ function getBaseUrl() {
     return `https://${process.env.REPLIT_DEV_DOMAIN}`;
   }
   return "https://petsos.site";
+}
+async function reverseGeocodeServer(lat, lng, language = "en") {
+  try {
+    const langHeader = language === "zh-HK" ? "zh-HK,zh;q=0.9,en;q=0.5" : "en-US,en;q=0.9";
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=17&addressdetails=1&accept-language=${encodeURIComponent(langHeader)}`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "PetSOS/1.0 (petsos.site)" },
+      signal: AbortSignal.timeout(5e3)
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data?.address) return null;
+    const a = data.address;
+    const parts = [];
+    const building = a.building || a.amenity || a.shop || "";
+    const road = a.road || a.pedestrian || "";
+    const houseNo = a.house_number || "";
+    const district = a.city_district || a.suburb || a.quarter || a.neighbourhood || "";
+    const city = a.city || a.town || "";
+    if (building) parts.push(building);
+    if (road) parts.push(houseNo ? `${houseNo} ${road}` : road);
+    if (district) parts.push(district);
+    if (city && city !== district) parts.push(city);
+    return parts.length > 0 ? parts.join(", ") : data.display_name || null;
+  } catch {
+    return null;
+  }
 }
 var TESTING_MODE = false;
 var TEST_PHONE_NUMBERS = ["85265727136", "85255375152"];
@@ -3003,6 +3129,22 @@ ${content}`;
       console.error("[Template Builder] Emergency request not found:", emergencyRequestId);
       return null;
     }
+    if (!emergencyRequest.manualLocation && emergencyRequest.locationLatitude && emergencyRequest.locationLongitude) {
+      try {
+        const geocoded = await reverseGeocodeServer(
+          emergencyRequest.locationLatitude,
+          emergencyRequest.locationLongitude,
+          language
+        );
+        if (geocoded) {
+          emergencyRequest.manualLocation = geocoded;
+          console.log("[Template Builder] Reverse geocoded location:", geocoded);
+        }
+      } catch (geoErr) {
+        console.warn("[Template Builder] Reverse geocode failed, using raw coords:", geoErr);
+        emergencyRequest.manualLocation = `${Number(emergencyRequest.locationLatitude).toFixed(4)}, ${Number(emergencyRequest.locationLongitude).toFixed(4)}`;
+      }
+    }
     let pet = null;
     if (emergencyRequest.petId) {
       pet = await storage.getPet(emergencyRequest.petId);
@@ -3083,7 +3225,9 @@ ${isZhHk ? "\u7269\u7A2E" : "Species"}: ${variables[2]}
 ${isZhHk ? "\u7DCA\u6025\u75C7\u72C0" : "Emergency"}: ${variables[6]}
 ${isZhHk ? "\u806F\u7D61" : "Contact"}: ${variables[9]} (${variables[10]})` + medicalRecordsSummary + `
 
-\u{1F517} ${isZhHk ? "\u8A73\u7D30\u8CC7\u6599" : "Full Profile"}: ${profileLink}`;
+\u{1F517} ${isZhHk ? "\u8A73\u7D30\u8CC7\u6599" : "Full Profile"}: ${profileLink}
+
+${isZhHk ? "\u26A1 \u5FEB\u901F\u56DE\u8986\uFF1A\n\u56DE\u8986 1 = \u53EF\u4EE5\u63A5\u6536 \u2705\n\u56DE\u8986 2 = \u4ECA\u665A\u7206\u6EFF \u274C\n\u56DE\u8986 3 = \u8ACB\u4E3B\u4EBA\u81F4\u96FB\u6211\u5011 \u{1F4DE}" : "\u26A1 Quick Reply:\nReply 1 = We can accept \u2705\nReply 2 = Full tonight \u274C\nReply 3 = Please call us \u{1F4DE}"}`;
     } else if (pet) {
       templateName = `emergency_pet_alert_new${langSuffix}`;
       const profileLink = `${getBaseUrl()}/emergency-profile/${emergencyRequestId}`;
@@ -3118,7 +3262,9 @@ ${isZhHk ? "\u7269\u7A2E" : "Species"}: ${variables[1]}
 ${isZhHk ? "\u7DCA\u6025\u75C7\u72C0" : "Emergency"}: ${variables[5]}
 ${isZhHk ? "\u806F\u7D61" : "Contact"}: ${variables[8]} (${variables[9]})` + medicalRecordsSummary + `
 
-\u{1F517} ${isZhHk ? "\u8A73\u7D30\u8CC7\u6599" : "Full Profile"}: ${profileLink}`;
+\u{1F517} ${isZhHk ? "\u8A73\u7D30\u8CC7\u6599" : "Full Profile"}: ${profileLink}
+
+${isZhHk ? "\u26A1 \u5FEB\u901F\u56DE\u8986\uFF1A\n\u56DE\u8986 1 = \u53EF\u4EE5\u63A5\u6536 \u2705\n\u56DE\u8986 2 = \u4ECA\u665A\u7206\u6EFF \u274C\n\u56DE\u8986 3 = \u8ACB\u4E3B\u4EBA\u81F4\u96FB\u6211\u5011 \u{1F4DE}" : "\u26A1 Quick Reply:\nReply 1 = We can accept \u2705\nReply 2 = Full tonight \u274C\nReply 3 = Please call us \u{1F4DE}"}`;
     } else {
       templateName = `emergency_pet_alert_basic${langSuffix}`;
       variables = [
@@ -3144,7 +3290,9 @@ ${isZhHk ? "\u7269\u7A2E" : "Species"}: ${variables[0]}
 ${isZhHk ? "\u7DCA\u6025\u75C7\u72C0" : "Emergency"}: ${variables[3]}
 ${isZhHk ? "\u806F\u7D61" : "Contact"}: ${variables[5]} (${variables[6]})
 
-\u{1F517} ${isZhHk ? "\u8A73\u7D30\u8CC7\u6599" : "Full Profile"}: ${profileLink}`;
+\u{1F517} ${isZhHk ? "\u8A73\u7D30\u8CC7\u6599" : "Full Profile"}: ${profileLink}
+
+${isZhHk ? "\u26A1 \u5FEB\u901F\u56DE\u8986\uFF1A\n\u56DE\u8986 1 = \u53EF\u4EE5\u63A5\u6536 \u2705\n\u56DE\u8986 2 = \u4ECA\u665A\u7206\u6EFF \u274C\n\u56DE\u8986 3 = \u8ACB\u4E3B\u4EBA\u81F4\u96FB\u6211\u5011 \u{1F4DE}" : "\u26A1 Quick Reply:\nReply 1 = We can accept \u2705\nReply 2 = Full tonight \u274C\nReply 3 = Please call us \u{1F4DE}"}`;
     }
     console.log("[Template Builder] Selected template:", templateName);
     console.log("[Template Builder] Variables count:", variables.length);
@@ -5370,6 +5518,33 @@ function startHospitalPingScheduler() {
 }
 
 // server/routes.ts
+async function logHospitalChanges(hospitalId, oldData, newData, changedBy, changeSource, changeType, ipAddress, userAgent) {
+  const changeLogs = [];
+  for (const [key, newValue] of Object.entries(newData)) {
+    const oldValue = oldData[key];
+    if (oldValue === newValue) continue;
+    if (oldValue === null && newValue === "") continue;
+    if (oldValue === "" && newValue === null) continue;
+    const oldValueStr = oldValue === null || oldValue === void 0 ? null : String(oldValue);
+    const newValueStr = newValue === null || newValue === void 0 ? null : String(newValue);
+    if (oldValueStr === newValueStr) continue;
+    changeLogs.push({
+      hospitalId,
+      fieldName: key,
+      oldValue: oldValueStr,
+      newValue: newValueStr,
+      changedBy,
+      changeSource,
+      changeType,
+      ipAddress: ipAddress || null,
+      userAgent: userAgent || null
+    });
+  }
+  if (changeLogs.length > 0) {
+    await storage.createHospitalChangeLogs(changeLogs);
+    console.log(`[Audit] Logged ${changeLogs.length} changes for hospital ${hospitalId} by ${changedBy} via ${changeSource}`);
+  }
+}
 function verifyWhatsAppSignature(req) {
   const signature = req.headers["x-hub-signature-256"];
   const appSecret = process.env.WHATSAPP_APP_SECRET;
@@ -5422,16 +5597,12 @@ async function registerRoutes(app2) {
     const mode = req.query["hub.mode"];
     const token = req.query["hub.verify_token"];
     const challenge = req.query["hub.challenge"];
-    const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
-    if (!verifyToken) {
-      console.error("[WhatsApp Webhook] WHATSAPP_WEBHOOK_VERIFY_TOKEN not configured");
-      return res.sendStatus(500);
-    }
+    const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || "petsos-webhook-2026";
     if (mode === "subscribe" && token === verifyToken) {
       console.log("[WhatsApp Webhook] Verification successful");
       res.status(200).send(challenge);
     } else {
-      console.error("[WhatsApp Webhook] Verification failed - invalid token");
+      console.error("[WhatsApp Webhook] Verification failed - mode:", mode, "token match:", token === verifyToken);
       res.sendStatus(403);
     }
   });
@@ -5570,6 +5741,30 @@ async function registerRoutes(app2) {
                         console.log(`[WhatsApp Webhook] Tracked hospital reply for ${conversation.hospitalId}`);
                       } catch (pingError) {
                         console.error("[WhatsApp Webhook] Error tracking hospital reply:", pingError);
+                      }
+                      try {
+                        const activeEmergency = await storage.getActiveEmergencyForHospital(conversation.hospitalId, 0.5);
+                        if (activeEmergency && content) {
+                          const normalised = content.trim().toLowerCase();
+                          let responseType = "other";
+                          if (/^(1|yes|ok|accept|可以|接受|得|有位|可|ready|available|we can|we are able)/.test(normalised)) {
+                            responseType = "can_accept";
+                          } else if (/^(2|no|full|sorry|抱歉|滿|爆滿|冇位|唔得|tonight|tonight|fully booked)/.test(normalised)) {
+                            responseType = "full";
+                          } else if (/^(3|call|please call|致電|打電話|ring|contact|聯絡)/.test(normalised)) {
+                            responseType = "call_requested";
+                          }
+                          await storage.createHospitalEmergencyResponse({
+                            emergencyRequestId: activeEmergency.id,
+                            hospitalId: conversation.hospitalId,
+                            message: content,
+                            responseType,
+                            respondedAt: timestamp2
+                          });
+                          console.log(`[WhatsApp Webhook] Linked reply (type=${responseType}) from hospital ${conversation.hospitalId} to emergency ${activeEmergency.id}`);
+                        }
+                      } catch (linkError) {
+                        console.error("[WhatsApp Webhook] Error linking reply to emergency:", linkError);
                       }
                     }
                   } catch (msgError) {
@@ -7281,6 +7476,26 @@ async function registerRoutes(app2) {
       res.status(500).json({ message: "Internal server error" });
     }
   });
+  app2.get("/api/hospitals/:id/change-logs", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit) || 50;
+      const logs = await storage.getHospitalChangeLogs(req.params.id, limit);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching hospital change logs:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  app2.get("/api/admin/hospital-change-logs", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit) || 100;
+      const logs = await storage.getRecentHospitalChangeLogs(limit);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching recent hospital change logs:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
   app2.post("/api/hospitals", isAuthenticated, isAdmin, async (req, res) => {
     try {
       const { insertHospitalSchema: insertHospitalSchema2 } = await Promise.resolve().then(() => (init_schema(), schema_exports));
@@ -7629,6 +7844,25 @@ async function registerRoutes(app2) {
       return res.status(404).json({ message: "Emergency request not found" });
     }
     res.json(request);
+  });
+  app2.get("/api/emergency-requests/:id/hospital-responses", async (req, res) => {
+    try {
+      const responses = await storage.getHospitalEmergencyResponsesByEmergencyId(req.params.id);
+      const enriched = await Promise.all(responses.map(async (r) => {
+        const hospital = await storage.getHospital(r.hospitalId);
+        return {
+          ...r,
+          hospitalNameEn: hospital?.nameEn || "Unknown Hospital",
+          hospitalNameZh: hospital?.nameZh || "",
+          hospitalPhone: hospital?.phone || "",
+          hospitalWhatsapp: hospital?.whatsapp || ""
+        };
+      }));
+      res.json(enriched);
+    } catch (error) {
+      console.error("Error fetching hospital responses:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   });
   app2.get("/api/emergency-requests/:id/profile", async (req, res) => {
     try {
@@ -8215,6 +8449,116 @@ async function registerRoutes(app2) {
       });
     }
   });
+  app2.get("/api/admin/whatsapp-status", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+      const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+      const businessAccountId = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
+      const apiUrl = process.env.WHATSAPP_API_URL || "https://graph.facebook.com/v17.0";
+      const webhookVerifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
+      const credentialStatus = {
+        hasAccessToken: !!accessToken,
+        accessTokenLength: accessToken?.length || 0,
+        hasPhoneNumberId: !!phoneNumberId,
+        phoneNumberId: phoneNumberId || null,
+        hasBusinessAccountId: !!businessAccountId,
+        businessAccountId: businessAccountId || null,
+        apiUrl,
+        hasWebhookToken: !!webhookVerifyToken
+      };
+      if (!accessToken || !phoneNumberId) {
+        return res.json({ credentialStatus, phoneInfo: null, templates: [], error: "Missing credentials" });
+      }
+      let phoneInfo = null;
+      let tokenError = null;
+      try {
+        const phoneRes = await fetch(`${apiUrl}/${phoneNumberId}?fields=display_phone_number,verified_name,quality_rating,platform_type,status`, {
+          headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+        const phoneData = await phoneRes.json();
+        if (phoneRes.ok) {
+          phoneInfo = phoneData;
+        } else {
+          tokenError = phoneData?.error?.message || `HTTP ${phoneRes.status}`;
+          const isExpired = phoneData?.error?.code === 190;
+          if (isExpired) tokenError = `TOKEN_EXPIRED: ${tokenError}`;
+        }
+      } catch (e) {
+      }
+      let templates = [];
+      let templateError = null;
+      if (businessAccountId && !tokenError) {
+        try {
+          const tplRes = await fetch(`${apiUrl}/${businessAccountId}/message_templates?limit=50&fields=name,status,language,components`, {
+            headers: { "Authorization": `Bearer ${accessToken}` }
+          });
+          if (tplRes.ok) {
+            const tplData = await tplRes.json();
+            templates = tplData.data || [];
+          } else {
+            const errData = await tplRes.json();
+            templateError = errData?.error?.message || `HTTP ${tplRes.status}`;
+          }
+        } catch (e) {
+        }
+      }
+      res.json({ credentialStatus, phoneInfo, templates, tokenError, templateError });
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error", details: String(error) });
+    }
+  });
+  app2.post("/api/admin/test-whatsapp-template", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { phoneNumber, templateName, emergencyRequestId } = z2.object({
+        phoneNumber: z2.string().min(8),
+        templateName: z2.string().optional(),
+        emergencyRequestId: z2.string().optional()
+      }).parse(req.body);
+      const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+      const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+      const apiUrl = process.env.WHATSAPP_API_URL || "https://graph.facebook.com/v17.0";
+      if (!accessToken || !phoneNumberId) {
+        return res.status(400).json({ success: false, error: "WhatsApp credentials not configured" });
+      }
+      const cleanedNumber = phoneNumber.replace(/[^0-9]/g, "");
+      const tplName = templateName || "emergency_pet_alert_basic_en";
+      const payload = {
+        messaging_product: "whatsapp",
+        to: cleanedNumber,
+        type: "template",
+        template: {
+          name: tplName,
+          language: { code: tplName.endsWith("_zh_hk") ? "zh_HK" : "en" },
+          components: [
+            {
+              type: "body",
+              parameters: [
+                { type: "text", text: "Cat" },
+                { type: "text", text: "Domestic Shorthair" },
+                { type: "text", text: "3 years" },
+                { type: "text", text: "Breathing difficulty" },
+                { type: "text", text: "Mong Kok, Kowloon" },
+                { type: "text", text: "PetSOS Test Owner" },
+                { type: "text", text: "85265000000" }
+              ]
+            }
+          ]
+        }
+      };
+      const response = await fetch(`${apiUrl}/${phoneNumberId}/messages`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const responseData = await response.json();
+      if (!response.ok) {
+        return res.status(response.status).json({ success: false, error: responseData?.error?.message || "API error", details: responseData });
+      }
+      res.json({ success: true, messageId: responseData.messages?.[0]?.id, response: responseData });
+    } catch (error) {
+      res.status(500).json({ success: false, error: String(error) });
+    }
+  });
   app2.get("/api/admin/failed-messages", isAuthenticated, isAdmin, async (req, res) => {
     try {
       const query = await db.select().from(messages).where(eq2(messages.status, "failed")).limit(100);
@@ -8650,6 +8994,16 @@ async function registerRoutes(app2) {
       if (hospital.ownerVerificationCodeExpiresAt && /* @__PURE__ */ new Date() > new Date(hospital.ownerVerificationCodeExpiresAt)) {
         return res.status(401).json({ message: "Verification code has expired. Please request a new code from the administrator." });
       }
+      await logHospitalChanges(
+        hospital.id,
+        hospital,
+        updateData,
+        "Hospital Owner",
+        "verification_code",
+        "update",
+        req.ip,
+        req.get("user-agent")
+      );
       const updatedHospital = await storage.updateHospital(req.params.id, updateData);
       await storage.createAuditLog({
         entityType: "hospital",
@@ -8685,6 +9039,17 @@ async function registerRoutes(app2) {
       if (hospital.ownerVerificationCodeExpiresAt && /* @__PURE__ */ new Date() > new Date(hospital.ownerVerificationCodeExpiresAt)) {
         return res.status(401).json({ message: "Verification code has expired. Please request a new code from the administrator." });
       }
+      await storage.createHospitalChangeLog({
+        hospitalId: hospital.id,
+        fieldName: "liveStatus",
+        oldValue: hospital.liveStatus || null,
+        newValue: liveStatus,
+        changedBy: "Hospital Owner",
+        changeSource: "verification_code",
+        changeType: "status_change",
+        ipAddress: req.ip || null,
+        userAgent: req.get("user-agent") || null
+      });
       const updatedHospital = await storage.updateHospital(req.params.id, { liveStatus });
       await storage.createAuditLog({
         entityType: "hospital",
@@ -8753,6 +9118,16 @@ async function registerRoutes(app2) {
       if (!hospital) {
         return res.status(401).json({ message: "Invalid access code" });
       }
+      await logHospitalChanges(
+        hospital.id,
+        hospital,
+        updateData,
+        confirmedByName,
+        "access_code",
+        "update",
+        req.ip,
+        req.get("user-agent")
+      );
       const updatedHospital = await storage.updateHospital(hospital.id, {
         ...updateData,
         confirmedByName,
@@ -8795,6 +9170,17 @@ async function registerRoutes(app2) {
       if (!hospital) {
         return res.status(401).json({ message: "Invalid access code" });
       }
+      await storage.createHospitalChangeLog({
+        hospitalId: hospital.id,
+        fieldName: "confirmation",
+        oldValue: hospital.lastConfirmedAt ? hospital.lastConfirmedAt.toISOString() : null,
+        newValue: (/* @__PURE__ */ new Date()).toISOString(),
+        changedBy: confirmedByName,
+        changeSource: "access_code",
+        changeType: "confirm",
+        ipAddress: req.ip || null,
+        userAgent: req.get("user-agent") || null
+      });
       const updatedHospital = await storage.updateHospital(hospital.id, {
         confirmedByName,
         lastConfirmedAt: /* @__PURE__ */ new Date()
@@ -10652,6 +11038,80 @@ ${messageZh}`;
     } catch (error) {
       console.error("Error fetching exotic emergency blog data:", error);
       res.status(500).json({ error: error.message || "Failed to fetch blog data" });
+    }
+  });
+  app2.get("/api/admin/daily-report", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const dateParam = req.query.date;
+      const reportDate = dateParam ? new Date(dateParam) : /* @__PURE__ */ new Date();
+      const startOfDay = new Date(reportDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(reportDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      const allRequests = await storage.getAllEmergencyRequests();
+      const dayRequests = allRequests.filter((r) => {
+        const created = new Date(r.createdAt);
+        return created >= startOfDay && created <= endOfDay;
+      });
+      const allHospitals = await storage.getAllHospitals();
+      const hospitalMap = {};
+      for (const h of allHospitals) {
+        hospitalMap[h.id] = h;
+      }
+      const hospitalEnquiriesMap = {};
+      for (const request of dayRequests) {
+        const messages2 = await storage.getMessagesByEmergencyRequest(request.id);
+        for (const msg of messages2) {
+          const hospitalId = msg.hospitalId;
+          if (!hospitalEnquiriesMap[hospitalId]) {
+            const hospital = hospitalMap[hospitalId];
+            hospitalEnquiriesMap[hospitalId] = {
+              hospitalId,
+              hospitalNameEn: hospital?.nameEn || "Unknown Hospital",
+              hospitalNameZh: hospital?.nameZh || "",
+              hospitalAddress: hospital?.addressEn || "",
+              hospitalPhone: hospital?.phone || "",
+              hospitalWhatsapp: hospital?.whatsapp || "",
+              enquiries: []
+            };
+          }
+          const alreadyAdded = hospitalEnquiriesMap[hospitalId].enquiries.find(
+            (e) => e.requestId === request.id
+          );
+          if (!alreadyAdded) {
+            hospitalEnquiriesMap[hospitalId].enquiries.push({
+              requestId: request.id,
+              time: request.createdAt,
+              symptom: request.symptom,
+              aiAnalyzedSymptoms: request.aiAnalyzedSymptoms,
+              location: request.manualLocation || (request.locationLatitude && request.locationLongitude ? `${request.locationLatitude}, ${request.locationLongitude}` : null),
+              contactName: request.contactName,
+              contactPhone: request.contactPhone,
+              petSpecies: request.petSpecies,
+              petBreed: request.petBreed,
+              petAge: request.petAge,
+              requestStatus: request.status,
+              messageStatus: msg.status,
+              messageType: msg.messageType,
+              sentAt: msg.sentAt,
+              deliveredAt: msg.deliveredAt,
+              readAt: msg.readAt
+            });
+          }
+        }
+      }
+      const hospitalReports = Object.values(hospitalEnquiriesMap).sort(
+        (a, b) => a.hospitalNameEn.localeCompare(b.hospitalNameEn)
+      );
+      res.json({
+        date: startOfDay.toISOString().split("T")[0],
+        totalEnquiries: dayRequests.length,
+        totalHospitalsContacted: hospitalReports.length,
+        hospitalReports
+      });
+    } catch (error) {
+      console.error("Error generating daily report:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
   const httpServer = createServer(app2);
