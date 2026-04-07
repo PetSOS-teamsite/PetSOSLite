@@ -11,5 +11,6 @@ export default defineConfig({
   dbCredentials: {
     url: process.env.DATABASE_URL,
   },
+  extensionsFilters: ["postgis"],
   tablesFilter: ["!spatial_ref_sys", "!geography_columns", "!geometry_columns"],
 });
