@@ -1189,6 +1189,7 @@ export const hospitalEmergencyResponses = pgTable("hospital_emergency_responses"
   emergencyRequestId: varchar("emergency_request_id").notNull().references(() => emergencyRequests.id, { onDelete: 'cascade' }),
   hospitalId: varchar("hospital_id").notNull().references(() => hospitals.id, { onDelete: 'cascade' }),
   message: text("message").notNull(),
+  responseType: varchar("response_type", { length: 32 }).default('other'), // 'can_accept' | 'full' | 'call_requested' | 'other'
   respondedAt: timestamp("responded_at").notNull().defaultNow(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => [

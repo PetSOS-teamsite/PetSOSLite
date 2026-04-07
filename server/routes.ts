@@ -366,17 +366,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         console.error('[WhatsApp Webhook] Error tracking hospital reply:', pingError);
                       }
 
-                      // Link this WhatsApp reply to the most recent active emergency for this hospital
+                      // Link this WhatsApp reply to the most recent active emergency (within 30 min)
                       try {
-                        const activeEmergency = await storage.getActiveEmergencyForHospital(conversation.hospitalId, 24);
+                        const activeEmergency = await storage.getActiveEmergencyForHospital(conversation.hospitalId, 0.5);
                         if (activeEmergency && content) {
+                          // Detect quick-reply keywords to classify response
+                          const normalised = content.trim().toLowerCase();
+                          let responseType: string = 'other';
+                          if (/^(1|yes|ok|accept|可以|接受|得|有位|可|ready|available|we can|we are able)/.test(normalised)) {
+                            responseType = 'can_accept';
+                          } else if (/^(2|no|full|sorry|抱歉|滿|爆滿|冇位|唔得|tonight|tonight|fully booked)/.test(normalised)) {
+                            responseType = 'full';
+                          } else if (/^(3|call|please call|致電|打電話|ring|contact|聯絡)/.test(normalised)) {
+                            responseType = 'call_requested';
+                          }
                           await storage.createHospitalEmergencyResponse({
                             emergencyRequestId: activeEmergency.id,
                             hospitalId: conversation.hospitalId,
                             message: content,
+                            responseType,
                             respondedAt: timestamp,
                           });
-                          console.log(`[WhatsApp Webhook] Linked reply from hospital ${conversation.hospitalId} to emergency ${activeEmergency.id}`);
+                          console.log(`[WhatsApp Webhook] Linked reply (type=${responseType}) from hospital ${conversation.hospitalId} to emergency ${activeEmergency.id}`);
                         }
                       } catch (linkError) {
                         console.error('[WhatsApp Webhook] Error linking reply to emergency:', linkError);

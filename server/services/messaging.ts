@@ -611,7 +611,8 @@ export class MessagingService {
         `${isZhHk ? '緊急症狀' : 'Emergency'}: ${variables[6]}\n` +
         `${isZhHk ? '聯絡' : 'Contact'}: ${variables[9]} (${variables[10]})` +
         medicalRecordsSummary +
-        `\n\n🔗 ${isZhHk ? '詳細資料' : 'Full Profile'}: ${profileLink}`;
+        `\n\n🔗 ${isZhHk ? '詳細資料' : 'Full Profile'}: ${profileLink}` +
+        `\n\n${isZhHk ? '⚡ 快速回覆：\n回覆 1 = 可以接收 ✅\n回覆 2 = 今晚爆滿 ❌\n回覆 3 = 請主人致電我們 📞' : '⚡ Quick Reply:\nReply 1 = We can accept ✅\nReply 2 = Full tonight ❌\nReply 3 = Please call us 📞'}`;
       
     } else if (pet) {
       // New registered pet (no visit history)
@@ -641,7 +642,8 @@ export class MessagingService {
         `${isZhHk ? '緊急症狀' : 'Emergency'}: ${variables[5]}\n` +
         `${isZhHk ? '聯絡' : 'Contact'}: ${variables[8]} (${variables[9]})` +
         medicalRecordsSummary +
-        `\n\n🔗 ${isZhHk ? '詳細資料' : 'Full Profile'}: ${profileLink}`;
+        `\n\n🔗 ${isZhHk ? '詳細資料' : 'Full Profile'}: ${profileLink}` +
+        `\n\n${isZhHk ? '⚡ 快速回覆：\n回覆 1 = 可以接收 ✅\n回覆 2 = 今晚爆滿 ❌\n回覆 3 = 請主人致電我們 📞' : '⚡ Quick Reply:\nReply 1 = We can accept ✅\nReply 2 = Full tonight ❌\nReply 3 = Please call us 📞'}`;
       
     } else {
       // Anonymous user (basic template)
@@ -665,7 +667,8 @@ export class MessagingService {
         `${isZhHk ? '物種' : 'Species'}: ${variables[0]}\n` +
         `${isZhHk ? '緊急症狀' : 'Emergency'}: ${variables[3]}\n` +
         `${isZhHk ? '聯絡' : 'Contact'}: ${variables[5]} (${variables[6]})` +
-        `\n\n🔗 ${isZhHk ? '詳細資料' : 'Full Profile'}: ${profileLink}`;
+        `\n\n🔗 ${isZhHk ? '詳細資料' : 'Full Profile'}: ${profileLink}` +
+        `\n\n${isZhHk ? '⚡ 快速回覆：\n回覆 1 = 可以接收 ✅\n回覆 2 = 今晚爆滿 ❌\n回覆 3 = 請主人致電我們 📞' : '⚡ Quick Reply:\nReply 1 = We can accept ✅\nReply 2 = Full tonight ❌\nReply 3 = Please call us 📞'}`;
     }
 
     console.log('[Template Builder] Selected template:', templateName);
