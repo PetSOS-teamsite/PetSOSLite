@@ -7,37 +7,58 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle2, Send, RefreshCw } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertCircle, CheckCircle2, Send, RefreshCw, Phone, MessageCircle,
+  Key, Globe, Zap, FileText, ExternalLink, Info, Copy
+} from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+
+// Expected template names PetSOS uses
+const REQUIRED_TEMPLATES = [
+  { name: "emergency_pet_alert_basic_en", lang: "en", desc: "Basic alert (no profile) — English" },
+  { name: "emergency_pet_alert_basic_zh_hk", lang: "zh_HK", desc: "Basic alert (no profile) — 繁體中文" },
+  { name: "emergency_pet_alert_new_en", lang: "en", desc: "New registered pet — English" },
+  { name: "emergency_pet_alert_new_zh_hk", lang: "zh_HK", desc: "New registered pet — 繁體中文" },
+  { name: "emergency_pet_alert_full_en", lang: "en", desc: "Full profile with history — English" },
+  { name: "emergency_pet_alert_full_zh_hk", lang: "zh_HK", desc: "Full profile with history — 繁體中文" },
+];
+
+function StatusDot({ ok }: { ok: boolean }) {
+  return (
+    <span className={`inline-block h-2.5 w-2.5 rounded-full flex-shrink-0 ${ok ? "bg-green-500" : "bg-red-500"}`} />
+  );
+}
+
+function CopyButton({ value }: { value: string }) {
+  const { toast } = useToast();
+  return (
+    <button
+      className="ml-1 opacity-50 hover:opacity-100 transition-opacity"
+      onClick={() => { navigator.clipboard.writeText(value); toast({ title: "Copied!" }); }}
+    >
+      <Copy className="h-3 w-3" />
+    </button>
+  );
+}
 
 export default function AdminDiagnosticsPage() {
   const { toast } = useToast();
   const [testPhone, setTestPhone] = useState("+85265727136");
-  const [testMessage, setTestMessage] = useState("PetSOS WhatsApp Test");
+  const [testMessage, setTestMessage] = useState("PetSOS WhatsApp Test — please ignore.");
+  const [selectedTemplate, setSelectedTemplate] = useState("emergency_pet_alert_basic_en");
 
-  // Test WhatsApp connection
-  const testWhatsAppMutation = useMutation({
-    mutationFn: (data: { phoneNumber: string; message: string }) =>
-      apiRequest("POST", "/api/admin/test-whatsapp", data),
-    onSuccess: (data: any) => {
-      if (data.success) {
-        toast({
-          title: "Test Successful",
-          description: "WhatsApp message sent successfully!",
-        });
-        // Refresh failed messages list
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/failed-messages"] });
-      }
-    },
-    onError: (error: any) => {
-      console.error("WhatsApp test error:", error);
-      toast({
-        title: "Test Failed",
-        description: error.message || "Failed to send test message",
-        variant: "destructive",
-      });
-    },
+  // Fetch WhatsApp status (credentials + phone info + templates from Meta)
+  const {
+    data: waStatus,
+    isLoading: loadingStatus,
+    refetch: refetchStatus,
+    error: statusError,
+  } = useQuery<any>({
+    queryKey: ["/api/admin/whatsapp-status"],
+    refetchOnWindowFocus: false,
   });
 
   // Get failed messages
@@ -45,226 +66,501 @@ export default function AdminDiagnosticsPage() {
     data: failedMessages,
     isLoading: loadingFailed,
     refetch: refetchFailed,
-  } = useQuery({
+  } = useQuery<any>({
     queryKey: ["/api/admin/failed-messages"],
   });
 
-  const handleTest = () => {
-    testWhatsAppMutation.mutate({
-      phoneNumber: testPhone,
-      message: testMessage,
-    });
-  };
+  // Send free-text test message
+  const testTextMutation = useMutation({
+    mutationFn: (data: { phoneNumber: string; message: string }) =>
+      apiRequest("POST", "/api/admin/test-whatsapp", data),
+    onSuccess: (data: any) => {
+      if (data.success) {
+        toast({ title: "Sent!", description: `Message ID: ${data.debugInfo?.messageId || "unknown"}` });
+      }
+    },
+    onError: (err: any) => {
+      toast({ title: "Send failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  // Send test template message
+  const testTemplateMutation = useMutation({
+    mutationFn: (data: { phoneNumber: string; templateName: string }) =>
+      apiRequest("POST", "/api/admin/test-whatsapp-template", data),
+    onSuccess: (data: any) => {
+      if (data.success) {
+        toast({ title: "Template sent!", description: `Message ID: ${data.messageId || "unknown"}` });
+      }
+    },
+    onError: (err: any) => {
+      toast({ title: "Template send failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const cred = waStatus?.credentialStatus;
+  const phoneInfo = waStatus?.phoneInfo;
+  const liveTemplates: any[] = waStatus?.templates || [];
+
+  // Cross-reference required vs live templates
+  const templateStatus = REQUIRED_TEMPLATES.map((req) => {
+    const live = liveTemplates.find((t: any) => t.name === req.name);
+    return { ...req, live, status: live?.status || "missing" };
+  });
+
+  const allTemplatesApproved = templateStatus.every((t) => t.status === "APPROVED");
+  const credentialsOk = cred?.hasAccessToken && cred?.hasPhoneNumberId && cred?.hasBusinessAccountId;
+  const phoneOk = phoneInfo && !phoneInfo.error;
+
+  // Webhook URL
+  const webhookUrl = `${window.location.origin}/api/whatsapp/webhook`;
 
   return (
     <>
       <SEO noindex={true} />
-      <div className="container mx-auto p-6 max-w-6xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">WhatsApp Diagnostics</h1>
-        <p className="text-muted-foreground">
-          Test your WhatsApp Business API connection and view message failures
-        </p>
-      </div>
+      <div className="container mx-auto p-4 sm:p-6 max-w-5xl space-y-6">
+        <div className="mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-1 flex items-center gap-2">
+            <MessageCircle className="h-7 w-7 text-green-600" />
+            WhatsApp Setup & Launch Centre
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            Verify credentials, templates, and test live messages before going live.
+          </p>
+        </div>
 
-      {/* Test WhatsApp Connection */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Test WhatsApp Connection</CardTitle>
-          <CardDescription>
-            Send a test message to verify your WhatsApp credentials are working
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                placeholder="+85265727136"
-                value={testPhone}
-                onChange={(e) => setTestPhone(e.target.value)}
-                data-testid="input-test-phone"
-              />
+        {/* ─── Launch Readiness Summary ─── */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Zap className="h-4 w-4 text-yellow-500" />
+                Launch Readiness
+              </CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => refetchStatus()} disabled={loadingStatus}>
+                <RefreshCw className={`h-4 w-4 ${loadingStatus ? "animate-spin" : ""}`} />
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="message">Test Message</Label>
-              <Input
-                id="message"
-                placeholder="Test message"
-                value={testMessage}
-                onChange={(e) => setTestMessage(e.target.value)}
-                data-testid="input-test-message"
-              />
-            </div>
-          </div>
-
-          <Button
-            onClick={handleTest}
-            disabled={testWhatsAppMutation.isPending}
-            className="w-full sm:w-auto"
-            data-testid="button-test-whatsapp"
-          >
-            {testWhatsAppMutation.isPending ? (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                Testing...
-              </>
+          </CardHeader>
+          <CardContent>
+            {loadingStatus ? (
+              <p className="text-sm text-muted-foreground">Checking...</p>
             ) : (
-              <>
-                <Send className="mr-2 h-4 w-4" />
-                Send Test Message
-              </>
-            )}
-          </Button>
-
-          {/* Test Results */}
-          {testWhatsAppMutation.data && (
-            <Alert
-              className={
-                (testWhatsAppMutation.data as any).success
-                  ? "border-green-500 bg-green-50 dark:bg-green-950"
-                  : "border-red-500 bg-red-50 dark:bg-red-950"
-              }
-              data-testid="alert-test-result"
-            >
-              {(testWhatsAppMutation.data as any).success ? (
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-              ) : (
-                <AlertCircle className="h-4 w-4 text-red-600" />
-              )}
-              <AlertDescription>
-                <div className="font-semibold mb-2">
-                  {(testWhatsAppMutation.data as any).success
-                    ? "✅ Success!"
-                    : "❌ Failed"}
-                </div>
-                {(testWhatsAppMutation.data as any).success ? (
-                  <div className="space-y-1 text-sm">
-                    <p>{(testWhatsAppMutation.data as any).message}</p>
-                    {(testWhatsAppMutation.data as any).debugInfo?.messageId && (
-                      <p className="font-mono text-xs">
-                        Message ID:{" "}
-                        {(testWhatsAppMutation.data as any).debugInfo.messageId}
+              <div className="space-y-2">
+                {[
+                  {
+                    label: "API credentials set",
+                    ok: !!credentialsOk,
+                    detail: credentialsOk ? "Token, Phone ID & Business Account ID all present" : "One or more credentials missing — see Credentials section below",
+                  },
+                  {
+                    label: "Phone number verified",
+                    ok: phoneOk && phoneInfo?.status !== "FLAGGED",
+                    detail: phoneOk
+                      ? `${phoneInfo.display_phone_number} — ${phoneInfo.verified_name} (${phoneInfo.quality_rating || "N/A"} quality)`
+                      : "Cannot verify — check token",
+                  },
+                  {
+                    label: "All 6 templates approved",
+                    ok: allTemplatesApproved,
+                    detail: allTemplatesApproved
+                      ? "All templates have APPROVED status on Meta"
+                      : `${templateStatus.filter((t) => t.status !== "APPROVED").length} template(s) not yet approved`,
+                  },
+                  {
+                    label: "Webhook configured",
+                    ok: !!cred?.hasWebhookToken,
+                    detail: cred?.hasWebhookToken ? `URL: ${webhookUrl}` : "WHATSAPP_WEBHOOK_VERIFY_TOKEN not set",
+                  },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-start gap-3 py-1.5">
+                    <StatusDot ok={item.ok} />
+                    <div>
+                      <p className={`text-sm font-semibold ${item.ok ? "text-gray-800 dark:text-gray-200" : "text-red-600 dark:text-red-400"}`}>
+                        {item.label}
                       </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-2 text-sm">
-                    <p className="font-semibold">
-                      {(testWhatsAppMutation.data as any).error}
-                    </p>
-                    {(testWhatsAppMutation.data as any).statusCode && (
-                      <p>
-                        Status Code:{" "}
-                        {(testWhatsAppMutation.data as any).statusCode}
-                      </p>
-                    )}
-                    {(testWhatsAppMutation.data as any).details && (
-                      <div className="mt-2">
-                        <p className="font-semibold">Details:</p>
-                        <pre className="mt-1 p-2 bg-white dark:bg-gray-900 rounded text-xs overflow-x-auto">
-                          {JSON.stringify(
-                            (testWhatsAppMutation.data as any).details,
-                            null,
-                            2
-                          )}
-                        </pre>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {testWhatsAppMutation.error && (
-            <Alert className="border-red-500 bg-red-50 dark:bg-red-950">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription>
-                <p className="font-semibold">Request Error</p>
-                <p className="text-sm">
-                  {(testWhatsAppMutation.error as any).message ||
-                    "Failed to connect to server"}
-                </p>
-              </AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Failed Messages */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Failed Messages</CardTitle>
-            <CardDescription>
-              Messages that failed to send via WhatsApp API
-            </CardDescription>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetchFailed()}
-            disabled={loadingFailed}
-            data-testid="button-refresh-failed"
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${loadingFailed ? "animate-spin" : ""}`}
-            />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {loadingFailed ? (
-            <p className="text-muted-foreground text-center py-8">
-              Loading...
-            </p>
-          ) : failedMessages && (failedMessages as any).total > 0 ? (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Badge variant="destructive" data-testid="badge-failed-count">
-                  {(failedMessages as any).total} Failed
-                </Badge>
-              </div>
-              <div className="space-y-3">
-                {(failedMessages as any).messages.map((msg: any, idx: number) => (
-                  <div
-                    key={msg.id}
-                    className="border rounded-lg p-4 space-y-2"
-                    data-testid={`failed-message-${idx}`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <p className="font-semibold">To: {msg.recipient}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Type: {msg.messageType}
-                        </p>
-                      </div>
-                      <Badge variant="outline">
-                        {msg.retryCount}/3 retries
-                      </Badge>
+                      <p className="text-xs text-muted-foreground">{item.detail}</p>
                     </div>
-                    {msg.error && (
-                      <p className="text-sm text-red-600 dark:text-red-400">
-                        Error: {msg.error}
-                      </p>
-                    )}
-                    {msg.failedAt && (
-                      <p className="text-xs text-muted-foreground">
-                        Failed at: {new Date(msg.failedAt).toLocaleString()}
-                      </p>
-                    )}
                   </div>
                 ))}
               </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ─── Credentials ─── */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Key className="h-4 w-4" />
+              Credentials
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Set these in the Replit Secrets pane. Never commit them to code.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingStatus ? (
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            ) : cred ? (
+              <div className="space-y-2">
+                {[
+                  {
+                    key: "WHATSAPP_ACCESS_TOKEN",
+                    ok: cred.hasAccessToken,
+                    detail: cred.hasAccessToken ? `${cred.accessTokenLength} chars` : "Not set",
+                    link: "https://developers.facebook.com/apps/",
+                    linkLabel: "Meta App Dashboard",
+                  },
+                  {
+                    key: "WHATSAPP_PHONE_NUMBER_ID",
+                    ok: cred.hasPhoneNumberId,
+                    detail: cred.phoneNumberId || "Not set",
+                    link: null,
+                  },
+                  {
+                    key: "WHATSAPP_BUSINESS_ACCOUNT_ID",
+                    ok: cred.hasBusinessAccountId,
+                    detail: cred.businessAccountId || "Not set",
+                    link: null,
+                  },
+                  {
+                    key: "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
+                    ok: cred.hasWebhookToken,
+                    detail: cred.hasWebhookToken ? "Set (value hidden)" : "Not set — needed for webhook verification",
+                    link: null,
+                  },
+                ].map((item) => (
+                  <div key={item.key} className="flex items-center justify-between gap-3 py-1.5 border-b last:border-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <StatusDot ok={item.ok} />
+                      <code className="text-xs font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded truncate">{item.key}</code>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-xs text-muted-foreground">{item.detail}</span>
+                      {item.link && (
+                        <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-xs flex items-center gap-1">
+                          {item.linkLabel} <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-red-500">{statusError ? "Failed to load status" : "Unknown"}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ─── Phone Number Info ─── */}
+        {phoneInfo && !phoneInfo.error && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Phone className="h-4 w-4 text-green-600" />
+                Registered Phone Number
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                  { label: "Number", value: phoneInfo.display_phone_number },
+                  { label: "Display Name", value: phoneInfo.verified_name },
+                  { label: "Quality Rating", value: phoneInfo.quality_rating || "N/A" },
+                  { label: "Status", value: phoneInfo.status || "N/A" },
+                ].map((item) => (
+                  <div key={item.label} className="space-y-1">
+                    <p className="text-xs text-muted-foreground">{item.label}</p>
+                    <p className="text-sm font-semibold">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* ─── Message Templates ─── */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Message Templates
+            </CardTitle>
+            <CardDescription className="text-xs">
+              All 6 templates must be APPROVED on Meta before going live. Create them in the{" "}
+              <a href="https://business.facebook.com/wa/manage/message-templates/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline inline-flex items-center gap-0.5">
+                Meta Business Manager <ExternalLink className="h-3 w-3" />
+              </a>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingStatus ? (
+              <p className="text-sm text-muted-foreground">Checking templates...</p>
+            ) : (
+              <div className="space-y-2">
+                {templateStatus.map((t) => (
+                  <div key={t.name} className="flex items-center justify-between gap-3 py-1.5 border-b last:border-0">
+                    <div className="flex items-start gap-2">
+                      <StatusDot ok={t.status === "APPROVED"} />
+                      <div>
+                        <code className="text-xs font-mono">{t.name}</code>
+                        <p className="text-xs text-muted-foreground">{t.desc}</p>
+                      </div>
+                    </div>
+                    <Badge
+                      variant={t.status === "APPROVED" ? "default" : t.status === "missing" ? "outline" : "secondary"}
+                      className={`text-xs flex-shrink-0 ${t.status === "APPROVED" ? "bg-green-600" : t.status === "PENDING" ? "bg-yellow-500" : t.status === "REJECTED" ? "bg-red-500 text-white" : ""}`}
+                    >
+                      {t.status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+            {liveTemplates.length > REQUIRED_TEMPLATES.length && (
+              <div className="mt-4">
+                <p className="text-xs text-muted-foreground mb-2">Other templates on your account:</p>
+                <div className="flex flex-wrap gap-1">
+                  {liveTemplates.filter((t: any) => !REQUIRED_TEMPLATES.find((r) => r.name === t.name)).map((t: any) => (
+                    <Badge key={t.name} variant="outline" className="text-xs font-mono">
+                      {t.name} ({t.status})
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ─── Webhook Configuration ─── */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Globe className="h-4 w-4" />
+              Webhook Configuration
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Configure this in the Meta App Dashboard → WhatsApp → Configuration
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Callback URL (Webhook URL)</Label>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-xs bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded font-mono break-all">
+                  {webhookUrl}
+                </code>
+                <CopyButton value={webhookUrl} />
+              </div>
             </div>
-          ) : (
-            <p className="text-muted-foreground text-center py-8">
-              No failed messages found
-            </p>
-          )}
-        </CardContent>
-      </Card>
+            <div className="space-y-1">
+              <Label className="text-xs">Verify Token</Label>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-xs bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded font-mono">
+                  {cred?.hasWebhookToken ? "(stored in WHATSAPP_WEBHOOK_VERIFY_TOKEN secret)" : "❌ Not set"}
+                </code>
+              </div>
+            </div>
+            <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/30">
+              <Info className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-xs">
+                Subscribe to the <strong>messages</strong> webhook field. The webhook receives inbound hospital replies
+                and delivery receipts. Make sure your deployed domain (not dev) is registered in Meta.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+
+        {/* ─── Live Test Section ─── */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Send className="h-4 w-4 text-green-600" />
+              Live Message Tests
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Send real messages to your phone to verify end-to-end delivery.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Free text test */}
+            <div className="space-y-3">
+              <p className="text-sm font-semibold">1. Free-text message (only works if number has messaged PetSOS first)</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Phone Number</Label>
+                  <Input
+                    placeholder="+85265727136"
+                    value={testPhone}
+                    onChange={(e) => setTestPhone(e.target.value)}
+                    data-testid="input-test-phone"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Message Text</Label>
+                  <Input
+                    placeholder="Test message"
+                    value={testMessage}
+                    onChange={(e) => setTestMessage(e.target.value)}
+                    data-testid="input-test-message"
+                  />
+                </div>
+              </div>
+              <Button
+                onClick={() => testTextMutation.mutate({ phoneNumber: testPhone, message: testMessage })}
+                disabled={testTextMutation.isPending}
+                variant="outline"
+                data-testid="button-test-whatsapp"
+              >
+                {testTextMutation.isPending ? <><RefreshCw className="mr-2 h-4 w-4 animate-spin" />Sending...</> : <><Send className="mr-2 h-4 w-4" />Send Text</>}
+              </Button>
+              {testTextMutation.data && (
+                <Alert className={(testTextMutation.data as any).success ? "border-green-500 bg-green-50 dark:bg-green-950/30" : "border-red-500 bg-red-50 dark:bg-red-950/30"} data-testid="alert-test-result">
+                  {(testTextMutation.data as any).success ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <AlertCircle className="h-4 w-4 text-red-600" />}
+                  <AlertDescription className="text-xs">
+                    {(testTextMutation.data as any).success
+                      ? `✅ Sent! Message ID: ${(testTextMutation.data as any).debugInfo?.messageId}`
+                      : `❌ ${(testTextMutation.data as any).error}`}
+                    {(testTextMutation.data as any).details && (
+                      <pre className="mt-2 p-2 bg-white dark:bg-gray-900 rounded overflow-x-auto">
+                        {JSON.stringify((testTextMutation.data as any).details, null, 2)}
+                      </pre>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Template test */}
+            <div className="space-y-3">
+              <p className="text-sm font-semibold">2. Approved template message (works to any number)</p>
+              <p className="text-xs text-muted-foreground">
+                This sends a real emergency alert template with placeholder data — perfect for hospital onboarding demos.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Phone Number</Label>
+                  <Input
+                    placeholder="+85265727136"
+                    value={testPhone}
+                    onChange={(e) => setTestPhone(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Template</Label>
+                  <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                    <SelectTrigger data-testid="select-template">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REQUIRED_TEMPLATES.map((t) => (
+                        <SelectItem key={t.name} value={t.name}>
+                          {t.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Button
+                onClick={() => testTemplateMutation.mutate({ phoneNumber: testPhone, templateName: selectedTemplate })}
+                disabled={testTemplateMutation.isPending}
+                className="bg-green-600 hover:bg-green-700"
+                data-testid="button-test-template"
+              >
+                {testTemplateMutation.isPending ? <><RefreshCw className="mr-2 h-4 w-4 animate-spin" />Sending...</> : <><Send className="mr-2 h-4 w-4" />Send Template</>}
+              </Button>
+              {testTemplateMutation.data && (
+                <Alert className={(testTemplateMutation.data as any).success ? "border-green-500 bg-green-50 dark:bg-green-950/30" : "border-red-500 bg-red-50 dark:bg-red-950/30"}>
+                  {(testTemplateMutation.data as any).success ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <AlertCircle className="h-4 w-4 text-red-600" />}
+                  <AlertDescription className="text-xs">
+                    {(testTemplateMutation.data as any).success
+                      ? `✅ Template sent! Message ID: ${(testTemplateMutation.data as any).messageId}`
+                      : `❌ ${(testTemplateMutation.data as any).error}`}
+                    {(testTemplateMutation.data as any).details && (
+                      <pre className="mt-2 p-2 bg-white dark:bg-gray-900 rounded overflow-x-auto text-xs">
+                        {JSON.stringify((testTemplateMutation.data as any).details, null, 2)}
+                      </pre>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ─── Failed Messages ─── */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-red-500" />
+                Failed Messages
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Messages that failed to deliver via WhatsApp
+              </CardDescription>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => refetchFailed()} disabled={loadingFailed} data-testid="button-refresh-failed">
+              <RefreshCw className={`h-4 w-4 ${loadingFailed ? "animate-spin" : ""}`} />
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {loadingFailed ? (
+              <p className="text-sm text-muted-foreground text-center py-6">Loading...</p>
+            ) : failedMessages && failedMessages.total > 0 ? (
+              <div className="space-y-3">
+                <Badge variant="destructive" data-testid="badge-failed-count">{failedMessages.total} failed</Badge>
+                {failedMessages.messages.map((msg: any, idx: number) => (
+                  <div key={msg.id} className="border rounded-lg p-3 space-y-1 text-sm" data-testid={`failed-message-${idx}`}>
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold">To: {msg.recipient}</span>
+                      <Badge variant="outline">{msg.retryCount}/3 retries</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Type: {msg.messageType}</p>
+                    {msg.error && <p className="text-xs text-red-600 dark:text-red-400">Error: {msg.error}</p>}
+                    {msg.failedAt && <p className="text-xs text-muted-foreground">{new Date(msg.failedAt).toLocaleString()}</p>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-6 text-sm">No failed messages — all clear ✅</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ─── Quick Links ─── */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Useful Links</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {[
+                { label: "Meta App Dashboard", url: "https://developers.facebook.com/apps/" },
+                { label: "Message Templates Manager", url: "https://business.facebook.com/wa/manage/message-templates/" },
+                { label: "WhatsApp Business Manager", url: "https://business.facebook.com/wa/manage/phone-numbers/" },
+                { label: "Cloud API Docs", url: "https://developers.facebook.com/docs/whatsapp/cloud-api/" },
+                { label: "Webhook Setup Guide", url: "https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks" },
+                { label: "System User Tokens", url: "https://business.facebook.com/settings/system-users/" },
+              ].map((link) => (
+                <a
+                  key={link.url}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                >
+                  <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" />
+                  {link.label}
+                </a>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </>
   );

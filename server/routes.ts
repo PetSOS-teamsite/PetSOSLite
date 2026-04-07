@@ -3827,6 +3827,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // WhatsApp setup status & template checker (admin only)
+  app.get("/api/admin/whatsapp-status", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+      const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+      const businessAccountId = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
+      const apiUrl = process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v17.0';
+      const webhookVerifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
+
+      const credentialStatus = {
+        hasAccessToken: !!accessToken,
+        accessTokenLength: accessToken?.length || 0,
+        hasPhoneNumberId: !!phoneNumberId,
+        phoneNumberId: phoneNumberId || null,
+        hasBusinessAccountId: !!businessAccountId,
+        businessAccountId: businessAccountId || null,
+        apiUrl,
+        hasWebhookToken: !!webhookVerifyToken,
+      };
+
+      // If no token/phone ID, return early
+      if (!accessToken || !phoneNumberId) {
+        return res.json({ credentialStatus, phoneInfo: null, templates: [], error: 'Missing credentials' });
+      }
+
+      // Fetch phone number details from Meta
+      let phoneInfo = null;
+      try {
+        const phoneRes = await fetch(`${apiUrl}/${phoneNumberId}?fields=display_phone_number,verified_name,quality_rating,platform_type,status`, {
+          headers: { 'Authorization': `Bearer ${accessToken}` },
+        });
+        if (phoneRes.ok) phoneInfo = await phoneRes.json();
+      } catch (e) { /* ignore */ }
+
+      // Fetch approved templates from Meta
+      let templates: any[] = [];
+      if (businessAccountId) {
+        try {
+          const tplRes = await fetch(`${apiUrl}/${businessAccountId}/message_templates?limit=50&fields=name,status,language,components`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` },
+          });
+          if (tplRes.ok) {
+            const tplData = await tplRes.json();
+            templates = tplData.data || [];
+          }
+        } catch (e) { /* ignore */ }
+      }
+
+      res.json({ credentialStatus, phoneInfo, templates });
+    } catch (error) {
+      res.status(500).json({ error: 'Internal server error', details: String(error) });
+    }
+  });
+
+  // Send test template message (admin only)
+  app.post("/api/admin/test-whatsapp-template", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { phoneNumber, templateName, emergencyRequestId } = z.object({
+        phoneNumber: z.string().min(8),
+        templateName: z.string().optional(),
+        emergencyRequestId: z.string().optional(),
+      }).parse(req.body);
+
+      const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+      const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+      const apiUrl = process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v17.0';
+
+      if (!accessToken || !phoneNumberId) {
+        return res.status(400).json({ success: false, error: 'WhatsApp credentials not configured' });
+      }
+
+      const cleanedNumber = phoneNumber.replace(/[^0-9]/g, '');
+      const tplName = templateName || 'emergency_pet_alert_basic_en';
+
+      // Build a real template payload
+      const payload: any = {
+        messaging_product: 'whatsapp',
+        to: cleanedNumber,
+        type: 'template',
+        template: {
+          name: tplName,
+          language: { code: tplName.endsWith('_zh_hk') ? 'zh_HK' : 'en' },
+          components: [
+            {
+              type: 'body',
+              parameters: [
+                { type: 'text', text: 'Cat' },
+                { type: 'text', text: 'Domestic Shorthair' },
+                { type: 'text', text: '3 years' },
+                { type: 'text', text: 'Breathing difficulty' },
+                { type: 'text', text: 'Mong Kok, Kowloon' },
+                { type: 'text', text: 'PetSOS Test Owner' },
+                { type: 'text', text: '85265000000' },
+              ],
+            },
+          ],
+        },
+      };
+
+      const response = await fetch(`${apiUrl}/${phoneNumberId}/messages`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        return res.status(response.status).json({ success: false, error: responseData?.error?.message || 'API error', details: responseData });
+      }
+
+      res.json({ success: true, messageId: responseData.messages?.[0]?.id, response: responseData });
+    } catch (error) {
+      res.status(500).json({ success: false, error: String(error) });
+    }
+  });
+
   // Get failed messages with details (admin only)
   app.get("/api/admin/failed-messages", isAuthenticated, isAdmin, async (req, res) => {
     try {
