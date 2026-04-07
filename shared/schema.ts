@@ -1179,3 +1179,27 @@ export const insertHospitalPingLogSchema = createInsertSchema(hospitalPingLogs).
 
 export type InsertHospitalPingLog = z.infer<typeof insertHospitalPingLogSchema>;
 export type HospitalPingLog = typeof hospitalPingLogs.$inferSelect;
+
+// =====================================================
+// HOSPITAL EMERGENCY RESPONSES
+// Tracks when a hospital replies to a specific emergency broadcast via WhatsApp
+// =====================================================
+export const hospitalEmergencyResponses = pgTable("hospital_emergency_responses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  emergencyRequestId: varchar("emergency_request_id").notNull().references(() => emergencyRequests.id, { onDelete: 'cascade' }),
+  hospitalId: varchar("hospital_id").notNull().references(() => hospitals.id, { onDelete: 'cascade' }),
+  message: text("message").notNull(),
+  respondedAt: timestamp("responded_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("idx_emergency_responses_request").on(table.emergencyRequestId),
+  index("idx_emergency_responses_hospital").on(table.hospitalId),
+]);
+
+export const insertHospitalEmergencyResponseSchema = createInsertSchema(hospitalEmergencyResponses).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertHospitalEmergencyResponse = z.infer<typeof insertHospitalEmergencyResponseSchema>;
+export type HospitalEmergencyResponse = typeof hospitalEmergencyResponses.$inferSelect;

@@ -362,6 +362,19 @@ export default function ClinicResultsPage() {
     refetchInterval: 8000,
   });
 
+  // Fetch hospital WhatsApp replies for this emergency
+  const { data: hospitalResponses = [] } = useQuery<any[]>({
+    queryKey: ['/api/emergency-requests', params?.requestId, 'hospital-responses'],
+    enabled: !!params?.requestId,
+    refetchInterval: 10000,
+  });
+
+  // Map hospitalId → their latest response
+  const hospitalResponseMap: Record<string, any> = hospitalResponses.reduce((acc: Record<string, any>, r: any) => {
+    if (!acc[r.hospitalId]) acc[r.hospitalId] = r;
+    return acc;
+  }, {});
+
   // Compute per-hospital broadcast status from messages
   const hospitalBroadcastStatus = broadcastMessages.reduce((acc: Record<string, any>, msg: any) => {
     const existing = acc[msg.hospitalId];
@@ -987,6 +1000,75 @@ export default function ClinicResultsPage() {
           </Card>
         )}
 
+        {/* Hospital WhatsApp Replies - shown when hospitals have replied */}
+        {hospitalResponses.length > 0 && (
+          <div className="space-y-2" data-testid="section-hospital-replies">
+            <div className="flex items-center gap-2 px-1">
+              <MessageCircle className="h-4 w-4 text-green-600" />
+              <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                {language === 'zh-HK'
+                  ? `${hospitalResponses.length} 間醫院回覆了您的緊急訊息`
+                  : `${hospitalResponses.length} hospital${hospitalResponses.length > 1 ? 's' : ''} replied to your emergency`}
+              </span>
+            </div>
+            {hospitalResponses.map((reply: any) => (
+              <Card
+                key={reply.id}
+                className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30"
+                data-testid={`card-hospital-reply-${reply.hospitalId}`}
+              >
+                <CardContent className="pt-3 pb-3">
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="p-1.5 bg-green-100 dark:bg-green-900/50 rounded-full">
+                        <MessageCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                          {reply.hospitalNameEn}
+                        </p>
+                        {reply.hospitalNameZh && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{reply.hospitalNameZh}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-200 border border-green-100 dark:border-green-800/50">
+                      {reply.message}
+                    </div>
+                    <div className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap flex-shrink-0">
+                      {new Date(reply.respondedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                  {(reply.hospitalPhone || reply.hospitalWhatsapp) && (
+                    <div className="flex gap-2 mt-2 ml-9">
+                      {reply.hospitalPhone && (
+                        <a href={`tel:${reply.hospitalPhone}`}>
+                          <Button size="sm" variant="outline" className="h-7 text-xs gap-1" data-testid={`button-call-reply-${reply.hospitalId}`}>
+                            <Phone className="h-3 w-3" />
+                            {language === 'zh-HK' ? '致電' : 'Call now'}
+                          </Button>
+                        </a>
+                      )}
+                      {reply.hospitalWhatsapp && (
+                        <a
+                          href={`https://wa.me/${reply.hospitalWhatsapp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(language === 'zh-HK' ? '你好，我係PetSOS緊急個案嘅主人，想跟進一下。' : 'Hi, I am the owner from the PetSOS emergency alert. Following up on your response.')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Button size="sm" className="h-7 text-xs gap-1 bg-green-600 hover:bg-green-700" data-testid={`button-whatsapp-reply-${reply.hospitalId}`}>
+                            <MessageCircle className="h-3 w-3" />
+                            {language === 'zh-HK' ? 'WhatsApp 回覆' : 'Reply on WhatsApp'}
+                          </Button>
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
         {/* Quick Statistics - Compact */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Card data-testid="stat-total" className="shadow-sm">
@@ -1320,6 +1402,17 @@ export default function ClinicResultsPage() {
                             <Badge variant="outline" className="bg-green-50 dark:bg-green-950 text-xs">
                               <MessageCircle className="h-3 w-3 mr-1" />
                               WhatsApp
+                            </Badge>
+                          )}
+                          {/* Hospital replied via WhatsApp to this emergency */}
+                          {hospitalResponseMap[hospital.id] && (
+                            <Badge
+                              variant="outline"
+                              className="bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-400 dark:border-green-600 text-xs font-semibold animate-pulse"
+                              data-testid={`badge-replied-${hospital.id}`}
+                            >
+                              <MessageCircle className="h-3 w-3 mr-1" />
+                              {language === 'zh-HK' ? '已回覆' : 'Replied!'}
                             </Badge>
                           )}
                           {/* This-emergency broadcast status */}

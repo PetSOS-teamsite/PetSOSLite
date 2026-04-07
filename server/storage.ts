@@ -31,10 +31,11 @@ import {
   type VetApplication, type InsertVetApplication,
   type HospitalPingState, type InsertHospitalPingState, type HospitalPingLog, type InsertHospitalPingLog,
   type HospitalChangeLog, type InsertHospitalChangeLog,
+  type HospitalEmergencyResponse, type InsertHospitalEmergencyResponse,
   users, pets, countries, regions, petBreeds, clinics, emergencyRequests, messages, featureFlags, auditLogs, privacyConsents, translations, hospitals, hospitalConsultFees, hospitalUpdates, petMedicalRecords, petMedicalSharingConsents, pushSubscriptions, notificationBroadcasts, clinicReviews, whatsappConversations, whatsappChatMessages,
   typhoonAlerts, hkHolidays, hospitalEmergencyStatus, userEmergencySubscriptions, typhoonNotificationQueue,
   vetConsultants, verifiedContentItems, contentVerifications, vetApplications,
-  hospitalPingState, hospitalPingLogs, hospitalChangeLogs
+  hospitalPingState, hospitalPingLogs, hospitalChangeLogs, hospitalEmergencyResponses
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -325,6 +326,11 @@ export interface IStorage {
   createHospitalChangeLogs(data: InsertHospitalChangeLog[]): Promise<HospitalChangeLog[]>;
   getHospitalChangeLogs(hospitalId: string, limit?: number): Promise<HospitalChangeLog[]>;
   getRecentHospitalChangeLogs(limit?: number): Promise<(HospitalChangeLog & { hospitalName?: string })[]>;
+
+  // Hospital Emergency Responses (WhatsApp replies linked to emergencies)
+  createHospitalEmergencyResponse(data: InsertHospitalEmergencyResponse): Promise<HospitalEmergencyResponse>;
+  getHospitalEmergencyResponsesByEmergencyId(emergencyRequestId: string): Promise<HospitalEmergencyResponse[]>;
+  getActiveEmergencyForHospital(hospitalId: string, withinHours?: number): Promise<EmergencyRequest | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -2031,6 +2037,19 @@ export class MemStorage implements IStorage {
 
   async getRecentHospitalChangeLogs(limit?: number): Promise<(HospitalChangeLog & { hospitalName?: string })[]> {
     throw new Error("MemStorage does not support hospital change logs - use DatabaseStorage");
+  }
+
+  // Hospital Emergency Responses - stub implementations
+  async createHospitalEmergencyResponse(data: InsertHospitalEmergencyResponse): Promise<HospitalEmergencyResponse> {
+    throw new Error("MemStorage does not support hospital emergency responses - use DatabaseStorage");
+  }
+
+  async getHospitalEmergencyResponsesByEmergencyId(emergencyRequestId: string): Promise<HospitalEmergencyResponse[]> {
+    throw new Error("MemStorage does not support hospital emergency responses - use DatabaseStorage");
+  }
+
+  async getActiveEmergencyForHospital(hospitalId: string, withinHours: number = 24): Promise<EmergencyRequest | undefined> {
+    throw new Error("MemStorage does not support getActiveEmergencyForHospital - use DatabaseStorage");
   }
 }
 
@@ -3925,6 +3944,43 @@ class DatabaseStorage implements IStorage {
       .orderBy(desc(hospitalChangeLogs.createdAt))
       .limit(limit);
     return results;
+  }
+
+  // Hospital Emergency Responses
+  async createHospitalEmergencyResponse(data: InsertHospitalEmergencyResponse): Promise<HospitalEmergencyResponse> {
+    const result = await db.insert(hospitalEmergencyResponses).values(data).returning();
+    return result[0];
+  }
+
+  async getHospitalEmergencyResponsesByEmergencyId(emergencyRequestId: string): Promise<HospitalEmergencyResponse[]> {
+    return await db.select()
+      .from(hospitalEmergencyResponses)
+      .where(eq(hospitalEmergencyResponses.emergencyRequestId, emergencyRequestId))
+      .orderBy(desc(hospitalEmergencyResponses.respondedAt));
+  }
+
+  async getActiveEmergencyForHospital(hospitalId: string, withinHours: number = 24): Promise<EmergencyRequest | undefined> {
+    const cutoff = new Date(Date.now() - withinHours * 60 * 60 * 1000);
+    // Find the most recent message sent to this hospital
+    const recentMessages = await db.select()
+      .from(messages)
+      .where(
+        and(
+          eq(messages.hospitalId, hospitalId),
+          gte(messages.createdAt, cutoff)
+        )
+      )
+      .orderBy(desc(messages.createdAt))
+      .limit(1);
+
+    if (recentMessages.length === 0) return undefined;
+
+    const request = await db.select()
+      .from(emergencyRequests)
+      .where(eq(emergencyRequests.id, recentMessages[0].emergencyRequestId))
+      .limit(1);
+
+    return request[0];
   }
 }
 

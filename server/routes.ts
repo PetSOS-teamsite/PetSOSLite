@@ -365,6 +365,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       } catch (pingError) {
                         console.error('[WhatsApp Webhook] Error tracking hospital reply:', pingError);
                       }
+
+                      // Link this WhatsApp reply to the most recent active emergency for this hospital
+                      try {
+                        const activeEmergency = await storage.getActiveEmergencyForHospital(conversation.hospitalId, 24);
+                        if (activeEmergency && content) {
+                          await storage.createHospitalEmergencyResponse({
+                            emergencyRequestId: activeEmergency.id,
+                            hospitalId: conversation.hospitalId,
+                            message: content,
+                            respondedAt: timestamp,
+                          });
+                          console.log(`[WhatsApp Webhook] Linked reply from hospital ${conversation.hospitalId} to emergency ${activeEmergency.id}`);
+                        }
+                      } catch (linkError) {
+                        console.error('[WhatsApp Webhook] Error linking reply to emergency:', linkError);
+                      }
                     }
                     
                   } catch (msgError) {
@@ -3016,6 +3032,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ message: "Emergency request not found" });
     }
     res.json(request);
+  });
+
+  // Get hospital WhatsApp responses for a specific emergency (public - for pet owner tracking)
+  app.get("/api/emergency-requests/:id/hospital-responses", async (req, res) => {
+    try {
+      const responses = await storage.getHospitalEmergencyResponsesByEmergencyId(req.params.id);
+      // Enrich with hospital name
+      const enriched = await Promise.all(responses.map(async (r) => {
+        const hospital = await storage.getHospital(r.hospitalId);
+        return {
+          ...r,
+          hospitalNameEn: hospital?.nameEn || 'Unknown Hospital',
+          hospitalNameZh: hospital?.nameZh || '',
+          hospitalPhone: hospital?.phone || '',
+          hospitalWhatsapp: hospital?.whatsapp || '',
+        };
+      }));
+      res.json(enriched);
+    } catch (error) {
+      console.error("Error fetching hospital responses:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   // Get emergency request profile (public shareable page for hospitals)
