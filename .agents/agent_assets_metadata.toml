@@ -6,3 +6,9 @@ id = "1kq9OyValVxwuFaAiB7Sr"
 uri = "file://DEV_CHECKLIST.md"
 type = "text"
 title = "PetSOS Dev Team Pre-Launch Checklist"
+
+[[outputs]]
+id = "nWroZlt5zeb6FfIeuX-z-"
+uri = "file://PHASE1_SUMMARY.md"
+type = "text"
+title = "PetSOS Phase 1 Full Summary"
