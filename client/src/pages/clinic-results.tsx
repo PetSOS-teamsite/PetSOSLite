@@ -355,6 +355,37 @@ export default function ClinicResultsPage() {
     queryKey: ['/api/hospitals'],
   });
 
+  // Fetch broadcast messages for this emergency to show live delivery status
+  const { data: broadcastMessages = [] } = useQuery<any[]>({
+    queryKey: ['/api/emergency-requests', params?.requestId, 'messages'],
+    enabled: !!params?.requestId,
+    refetchInterval: 8000,
+  });
+
+  // Compute per-hospital broadcast status from messages
+  const hospitalBroadcastStatus = broadcastMessages.reduce((acc: Record<string, any>, msg: any) => {
+    const existing = acc[msg.hospitalId];
+    const isMoreAdvanced = !existing ||
+      (msg.readAt && !existing.readAt) ||
+      (msg.deliveredAt && !existing.deliveredAt && !existing.readAt) ||
+      (msg.status === 'delivered' && existing.status !== 'delivered' && existing.status !== 'read');
+    if (!existing || isMoreAdvanced) {
+      acc[msg.hospitalId] = {
+        status: msg.readAt ? 'read' : msg.status,
+        readAt: msg.readAt,
+        deliveredAt: msg.deliveredAt,
+        sentAt: msg.sentAt,
+      };
+    }
+    return acc;
+  }, {} as Record<string, any>);
+
+  const broadcastStats = {
+    total: Object.keys(hospitalBroadcastStatus).length,
+    delivered: Object.values(hospitalBroadcastStatus).filter((m: any) => m.status === 'delivered' || m.readAt).length,
+    opened: Object.values(hospitalBroadcastStatus).filter((m: any) => m.readAt).length,
+  };
+
   // Set user location from emergency request
   useEffect(() => {
     if (emergencyRequest?.locationLatitude && emergencyRequest?.locationLongitude) {
@@ -914,6 +945,48 @@ export default function ClinicResultsPage() {
           </Card>
         )}
 
+        {/* Broadcast Response Status - shown when a broadcast has been sent */}
+        {broadcastStats.total > 0 && (
+          <Card className="border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40" data-testid="card-broadcast-status">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                  <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                    {language === 'zh-HK' ? '廣播狀態' : 'Broadcast Status'}
+                  </span>
+                  <span className="text-xs text-blue-600 dark:text-blue-400">
+                    {language === 'zh-HK' ? '每8秒更新' : 'auto-refreshing'}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <div className="flex items-center gap-1.5" data-testid="broadcast-stat-sent">
+                    <div className="h-2 w-2 rounded-full bg-blue-400" />
+                    <span className="text-sm text-blue-800 dark:text-blue-200">
+                      <span className="font-bold">{broadcastStats.total}</span>
+                      <span className="ml-1 text-blue-600 dark:text-blue-400">{language === 'zh-HK' ? '間醫院已聯絡' : 'hospitals alerted'}</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5" data-testid="broadcast-stat-delivered">
+                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                    <span className="text-sm text-blue-800 dark:text-blue-200">
+                      <span className="font-bold text-green-700 dark:text-green-400">{broadcastStats.delivered}</span>
+                      <span className="ml-1 text-blue-600 dark:text-blue-400">{language === 'zh-HK' ? '收到訊息' : 'received message'}</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5" data-testid="broadcast-stat-opened">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <span className="text-sm text-blue-800 dark:text-blue-200">
+                      <span className="font-bold text-emerald-700 dark:text-emerald-400">{broadcastStats.opened}</span>
+                      <span className="ml-1 text-blue-600 dark:text-blue-400">{language === 'zh-HK' ? '已閱讀' : 'opened/read'}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Quick Statistics - Compact */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Card data-testid="stat-total" className="shadow-sm">
@@ -1248,6 +1321,25 @@ export default function ClinicResultsPage() {
                               <MessageCircle className="h-3 w-3 mr-1" />
                               WhatsApp
                             </Badge>
+                          )}
+                          {/* This-emergency broadcast status */}
+                          {hospitalBroadcastStatus[hospital.id] && (
+                            hospitalBroadcastStatus[hospital.id].readAt ? (
+                              <Badge variant="outline" className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 text-xs" data-testid={`badge-broadcast-opened-${hospital.id}`}>
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                {language === 'zh-HK' ? '已閱讀緊急訊息' : 'Opened your alert'}
+                              </Badge>
+                            ) : (hospitalBroadcastStatus[hospital.id].status === 'delivered' || hospitalBroadcastStatus[hospital.id].deliveredAt) ? (
+                              <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700 text-xs" data-testid={`badge-broadcast-delivered-${hospital.id}`}>
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                {language === 'zh-HK' ? '已收到緊急訊息' : 'Received your alert'}
+                              </Badge>
+                            ) : (hospitalBroadcastStatus[hospital.id].status === 'sent' || hospitalBroadcastStatus[hospital.id].sentAt) ? (
+                              <Badge variant="outline" className="bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 text-xs" data-testid={`badge-broadcast-sent-${hospital.id}`}>
+                                <Send className="h-3 w-3 mr-1" />
+                                {language === 'zh-HK' ? '訊息已發送' : 'Alert sent'}
+                              </Badge>
+                            ) : null
                           )}
                           {/* Last Reply Indicator */}
                           {hospital.lastInboundReplyAt && (
