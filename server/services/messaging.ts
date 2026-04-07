@@ -36,6 +36,38 @@ function getBaseUrl(): string {
   return 'https://petsos.site';
 }
 
+/**
+ * Server-side reverse geocoding via OpenStreetMap Nominatim.
+ * Converts lat/lng to a readable address. Returns null on failure.
+ */
+async function reverseGeocodeServer(lat: number | string, lng: number | string, language: string = 'en'): Promise<string | null> {
+  try {
+    const langHeader = language === 'zh-HK' ? 'zh-HK,zh;q=0.9,en;q=0.5' : 'en-US,en;q=0.9';
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=17&addressdetails=1&accept-language=${encodeURIComponent(langHeader)}`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'PetSOS/1.0 (petsos.site)' },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return null;
+    const data: any = await res.json();
+    if (!data?.address) return null;
+    const a = data.address;
+    const parts: string[] = [];
+    const building = a.building || a.amenity || a.shop || '';
+    const road = a.road || a.pedestrian || '';
+    const houseNo = a.house_number || '';
+    const district = a.city_district || a.suburb || a.quarter || a.neighbourhood || '';
+    const city = a.city || a.town || '';
+    if (building) parts.push(building);
+    if (road) parts.push(houseNo ? `${houseNo} ${road}` : road);
+    if (district) parts.push(district);
+    if (city && city !== district) parts.push(city);
+    return parts.length > 0 ? parts.join(', ') : data.display_name || null;
+  } catch {
+    return null;
+  }
+}
+
 // ⚠️ TESTING MODE - REMOVE AFTER TESTING
 // When enabled, all WhatsApp messages will be sent to these test numbers instead of actual clinic numbers
 const TESTING_MODE = false; // Disabled for App Review video recording
@@ -518,6 +550,24 @@ export class MessagingService {
     if (!emergencyRequest) {
       console.error('[Template Builder] Emergency request not found:', emergencyRequestId);
       return null;
+    }
+
+    // If manualLocation is missing but GPS coords are available, reverse geocode them
+    if (!emergencyRequest.manualLocation && emergencyRequest.locationLatitude && emergencyRequest.locationLongitude) {
+      try {
+        const geocoded = await reverseGeocodeServer(
+          emergencyRequest.locationLatitude,
+          emergencyRequest.locationLongitude,
+          language
+        );
+        if (geocoded) {
+          (emergencyRequest as any).manualLocation = geocoded;
+          console.log('[Template Builder] Reverse geocoded location:', geocoded);
+        }
+      } catch (geoErr) {
+        console.warn('[Template Builder] Reverse geocode failed, using raw coords:', geoErr);
+        (emergencyRequest as any).manualLocation = `${Number(emergencyRequest.locationLatitude).toFixed(4)}, ${Number(emergencyRequest.locationLongitude).toFixed(4)}`;
+      }
     }
 
     // Fetch pet data if available

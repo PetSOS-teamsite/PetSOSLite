@@ -19,6 +19,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useAuth } from "@/hooks/useAuth";
 import { BreedCombobox } from "@/components/BreedCombobox";
 import { analytics } from "@/lib/analytics";
+import { reverseGeocode } from "@/lib/geocode";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { PhoneInput } from "@/components/PhoneInput";
 import { SEO } from "@/components/SEO";
@@ -170,11 +171,25 @@ export default function EmergencyPage() {
     if (step === 2 && !gpsDetected) {
       if ("geolocation" in navigator) {
         navigator.geolocation.getCurrentPosition(
-          (position) => {
-            form.setValue("locationLatitude", position.coords.latitude);
-            form.setValue("locationLongitude", position.coords.longitude);
+          async (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            form.setValue("locationLatitude", lat);
+            form.setValue("locationLongitude", lng);
             setGpsDetected(true);
             setGpsError(null);
+            // Reverse geocode to a readable address
+            try {
+              const result = await reverseGeocode(lat, lng, language);
+              if (result) {
+                form.setValue("manualLocation", result.address);
+              } else {
+                // Fallback: show raw coordinates if geocoding fails
+                form.setValue("manualLocation", `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+              }
+            } catch {
+              form.setValue("manualLocation", `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+            }
           },
           (error) => {
             setGpsError(t("emergency.gps.error", "Unable to detect location"));
@@ -185,7 +200,7 @@ export default function EmergencyPage() {
         setGpsError(t("emergency.gps.not_supported", "Geolocation is not supported by this browser"));
       }
     }
-  }, [step, gpsDetected, gpsRetryCount, form, t]); // Added gpsRetryCount and t to dependencies
+  }, [step, gpsDetected, gpsRetryCount, form, t, language]); // Added gpsRetryCount and t to dependencies
 
   // Fetch regions for location selection
   const { data: regions = [] } = useQuery<any[]>({

@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { analytics } from "@/lib/analytics";
+import { reverseGeocode } from "@/lib/geocode";
 import { formatPhoneForDisplay } from "@/lib/phoneUtils";
 import {
   AlertDialog,
@@ -814,18 +815,26 @@ export default function ClinicResultsPage() {
       setEditGpsError(null);
       
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          // Reverse geocode to readable address
+          let addressStr = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          try {
+            const result = await reverseGeocode(lat, lng, language);
+            if (result) addressStr = result.address;
+          } catch {}
           setEditFormData(prev => ({
             ...prev,
-            locationLatitude: position.coords.latitude,
-            locationLongitude: position.coords.longitude,
-            manualLocation: "", // Clear manual location when GPS is used
+            locationLatitude: lat,
+            locationLongitude: lng,
+            manualLocation: addressStr,
           }));
           setEditGpsDetecting(false);
           setEditGpsError(null);
           toast({
             title: t('emergency.gps.success', 'Location Detected'),
-            description: t('emergency.gps.success_desc', 'Your GPS location has been detected successfully'),
+            description: addressStr,
           });
         },
         (error) => {
