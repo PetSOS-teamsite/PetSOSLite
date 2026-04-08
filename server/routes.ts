@@ -7074,6 +7074,22 @@ PetSOS 現已準備好幫助您在香港尋找 24 小時獸醫服務。
     }
   });
 
+  // Manually trigger daily report email (admin only)
+  app.post("/api/admin/daily-report/send", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { sendDailyReport } = await import("./services/daily-report");
+      const result = await sendDailyReport();
+      if (result.success) {
+        res.json({ success: true, message: "Daily report email sent successfully" });
+      } else {
+        res.status(500).json({ success: false, message: result.error || "Failed to send report" });
+      }
+    } catch (error) {
+      console.error("Error sending daily report email:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Daily Emergency Report (admin only) - grouped by hospital
   app.get("/api/admin/daily-report", isAuthenticated, isAdmin, async (req, res) => {
     try {

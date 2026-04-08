@@ -9,6 +9,7 @@ import { ensureCountriesExist } from "./seed-countries";
 import { startNotificationScheduler, startTyphoonNotificationScheduler } from "./services/notification-scheduler";
 import { startTyphoonPolling } from "./services/typhoon-monitor";
 import { startHospitalPingScheduler } from "./services/hospital-ping-scheduler";
+import { startDailyReportScheduler } from "./services/daily-report";
 import fs from "fs";
 import path from "path";
 // Schema refresh trigger: 2025-12-03
@@ -239,6 +240,9 @@ app.use((req, res, next) => {
       
       startHospitalPingScheduler();
       log('[Startup] Hospital ping scheduler started (hourly ping + no-reply check)');
+
+      startDailyReportScheduler();
+      log('[Startup] Daily report scheduler started (fires at 08:00 HKT)');
     }, 2000);
   });
 })();
