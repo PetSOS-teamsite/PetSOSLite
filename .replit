@@ -32,5 +32,10 @@ author = 41898245
 task = "shell.exec"
 args = "npm run dev"
 
+[userenv]
+
+[userenv.shared]
+DAILY_REPORT_EMAIL = "ansonlabfornone@gmail.com"
+
 
 

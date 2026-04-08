@@ -16,19 +16,22 @@ PetSOS is an emergency veterinary care coordination platform for Hong Kong pet o
 
 Phase 1 covers exactly one user journey end-to-end: **pet owner in crisis → nearest available hospital**. Everything else is Phase 2.
 
-### The 5-Step Flow
+> Note: No account creation required to use the emergency flow. `/signup`, `/login`, `/pets`, `/profile` are Phase 2.
+
+### The 6-Step Flow
 
 ```
-① DISCOVER → ② INTAKE → ③ BROADCAST → ④ LIVE RESULTS → ⑤ OWNER ACTS
+① DISCOVER → ② INTAKE → ③ BROADCAST → ④ LIVE RESULTS → ⑤ OWNER ACTS → ⑥ ADMIN REVIEW
 ```
 
 | Step | What happens | Pages involved |
 |------|-------------|----------------|
-| **① Discover** | Owner finds PetSOS, creates account, adds pet profile | `/`  `/signup`  `/login`  `/pets` |
+| **① Discover** | Owner finds PetSOS — no account required. Can browse hospital directory before starting an emergency | `/`  `/clinics`  `/hospitals/:slug` |
 | **② Emergency Intake** | AI-assisted 3-step form: symptoms (+ voice) → GPS location → contact info | `/emergency` |
-| **③ Broadcast** | System sends WhatsApp template message to all nearby 24h hospitals | *(backend only — messaging service)* |
-| **④ Live Results** | Hospital replies appear as colour-coded cards in real time | `/emergency-results/:id` |
+| **③ Broadcast** | System sends WhatsApp template message to all nearby 24h hospitals simultaneously | *(backend only — messaging service)* |
+| **④ Live Results** | Hospital replies appear as colour-coded cards in real time (30-min reply window) | `/emergency-results/:id` |
 | **⑤ Owner Acts** | Owner calls or heads directly to the accepting hospital | `/clinics`  `/hospitals/:slug` |
+| **⑥ Admin Review** | Daily email report at 08:00 HKT — previous day split into 3 × 8-hour periods with case details, location, response rates | `/admin`  `/admin/analytics` |
 
 ---
 
