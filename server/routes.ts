@@ -3908,9 +3908,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const cleanedNumber = phoneNumber.replace(/[^0-9]/g, '');
-      const tplName = templateName || 'emergency_pet_alert_basic_en';
+      const tplName = templateName || 'hello_world';
+      const isHelloWorld = tplName === 'hello_world';
 
-      // Build a real template payload
+      // hello_world has no parameters; PetSOS templates use sample body vars
       const payload: any = {
         messaging_product: 'whatsapp',
         to: cleanedNumber,
@@ -3918,20 +3919,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         template: {
           name: tplName,
           language: { code: tplName.endsWith('_zh_hk') ? 'zh_HK' : 'en' },
-          components: [
-            {
-              type: 'body',
-              parameters: [
-                { type: 'text', text: 'Cat' },
-                { type: 'text', text: 'Domestic Shorthair' },
-                { type: 'text', text: '3 years' },
-                { type: 'text', text: 'Breathing difficulty' },
-                { type: 'text', text: 'Mong Kok, Kowloon' },
-                { type: 'text', text: 'PetSOS Test Owner' },
-                { type: 'text', text: '85265000000' },
-              ],
-            },
-          ],
+          ...(isHelloWorld ? {} : {
+            components: [
+              {
+                type: 'body',
+                parameters: [
+                  { type: 'text', text: 'Cat' },
+                  { type: 'text', text: 'Domestic Shorthair' },
+                  { type: 'text', text: '3 years' },
+                  { type: 'text', text: 'Breathing difficulty' },
+                  { type: 'text', text: 'Mong Kok, Kowloon' },
+                  { type: 'text', text: 'PetSOS Test Owner' },
+                  { type: 'text', text: '85265000000' },
+                ],
+              },
+            ],
+          }),
         },
       };
 

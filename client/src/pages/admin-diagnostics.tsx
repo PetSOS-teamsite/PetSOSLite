@@ -26,6 +26,11 @@ const REQUIRED_TEMPLATES = [
   { name: "emergency_pet_alert_full_zh_hk", lang: "zh_HK", desc: "Full profile with history — 繁體中文" },
 ];
 
+const TEST_TEMPLATES = [
+  { name: "hello_world", lang: "en", desc: "✅ Pre-approved by Meta — use this to test connection now" },
+  ...REQUIRED_TEMPLATES,
+];
+
 function StatusDot({ ok }: { ok: boolean }) {
   return (
     <span className={`inline-block h-2.5 w-2.5 rounded-full flex-shrink-0 ${ok ? "bg-green-500" : "bg-red-500"}`} />
@@ -48,7 +53,7 @@ export default function AdminDiagnosticsPage() {
   const { toast } = useToast();
   const [testPhone, setTestPhone] = useState("+85265727136");
   const [testMessage, setTestMessage] = useState("PetSOS WhatsApp Test — please ignore.");
-  const [selectedTemplate, setSelectedTemplate] = useState("emergency_pet_alert_basic_en");
+  const [selectedTemplate, setSelectedTemplate] = useState("hello_world");
 
   // Fetch WhatsApp status (credentials + phone info + templates from Meta)
   const {
@@ -522,9 +527,10 @@ export default function AdminDiagnosticsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {REQUIRED_TEMPLATES.map((t) => (
+                      {TEST_TEMPLATES.map((t) => (
                         <SelectItem key={t.name} value={t.name}>
-                          {t.name}
+                          <span className="font-mono text-xs">{t.name}</span>
+                          <span className="ml-2 text-muted-foreground text-xs">{t.desc}</span>
                         </SelectItem>
                       ))}
                     </SelectContent>
