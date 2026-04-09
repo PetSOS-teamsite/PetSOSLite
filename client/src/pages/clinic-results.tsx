@@ -1009,6 +1009,34 @@ export default function ClinicResultsPage() {
           </Card>
         )}
 
+        {/* Waiting for replies — shown after broadcast with no replies yet */}
+        {broadcastStats.total > 0 && hospitalResponses.length === 0 && (
+          <Card className="border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30" data-testid="card-waiting-replies">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5">
+                  <Loader2 className="h-5 w-5 text-amber-600 dark:text-amber-400 animate-spin" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                    {language === 'zh-HK' ? '等待醫院回覆中…' : 'Waiting for hospital replies…'}
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                    {language === 'zh-HK'
+                      ? '醫院通常在數分鐘內回覆。此頁面每10秒自動更新。'
+                      : 'Hospitals typically reply within a few minutes. This page refreshes automatically every 10 seconds.'}
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-300 mt-2 font-medium">
+                    {language === 'zh-HK'
+                      ? '💡 提示：如超過5分鐘仍未收到回覆，請直接致電下方診所。'
+                      : '💡 Tip: If no reply after 5 minutes, call the clinics directly using the phone numbers below.'}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Hospital WhatsApp Replies - shown when hospitals have replied */}
         {hospitalResponses.length > 0 && (
           <div className="space-y-2" data-testid="section-hospital-replies">

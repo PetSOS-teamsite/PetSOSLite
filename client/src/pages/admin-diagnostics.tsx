@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertCircle, CheckCircle2, Send, RefreshCw, Phone, MessageCircle,
-  Key, Globe, Zap, FileText, ExternalLink, Info, Copy
+  Key, Globe, Zap, FileText, ExternalLink, Info, Copy, Mail
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -72,11 +72,15 @@ export default function AdminDiagnosticsPage() {
 
   // Send free-text test message
   const testTextMutation = useMutation({
-    mutationFn: (data: { phoneNumber: string; message: string }) =>
-      apiRequest("POST", "/api/admin/test-whatsapp", data),
+    mutationFn: async (data: { phoneNumber: string; message: string }) => {
+      const res = await apiRequest("POST", "/api/admin/test-whatsapp", data);
+      return res.json();
+    },
     onSuccess: (data: any) => {
       if (data.success) {
         toast({ title: "Sent!", description: `Message ID: ${data.debugInfo?.messageId || "unknown"}` });
+      } else {
+        toast({ title: "Send failed", description: data.error || "Unknown error", variant: "destructive" });
       }
     },
     onError: (err: any) => {
@@ -86,15 +90,37 @@ export default function AdminDiagnosticsPage() {
 
   // Send test template message
   const testTemplateMutation = useMutation({
-    mutationFn: (data: { phoneNumber: string; templateName: string }) =>
-      apiRequest("POST", "/api/admin/test-whatsapp-template", data),
+    mutationFn: async (data: { phoneNumber: string; templateName: string }) => {
+      const res = await apiRequest("POST", "/api/admin/test-whatsapp-template", data);
+      return res.json();
+    },
     onSuccess: (data: any) => {
       if (data.success) {
         toast({ title: "Template sent!", description: `Message ID: ${data.messageId || "unknown"}` });
+      } else {
+        toast({ title: "Template send failed", description: data.error || "Unknown error", variant: "destructive" });
       }
     },
     onError: (err: any) => {
       toast({ title: "Template send failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  // Send daily report email
+  const dailyReportMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/daily-report/send", {});
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      if (data.success) {
+        toast({ title: "Daily report sent!", description: data.message || "Report emailed successfully." });
+      } else {
+        toast({ title: "Report send failed", description: data.message || "Unknown error", variant: "destructive" });
+      }
+    },
+    onError: (err: any) => {
+      toast({ title: "Report send failed", description: err.message, variant: "destructive" });
     },
   });
 
@@ -529,6 +555,48 @@ export default function AdminDiagnosticsPage() {
                 </Alert>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* ─── Daily Report Email ─── */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Mail className="h-4 w-4 text-blue-500" />
+              Daily Operations Report
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Send the daily case summary email to all configured recipients (DAILY_REPORT_EMAIL env var). Covers the last 24 hours split into 3×8-hour periods.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button
+              onClick={() => dailyReportMutation.mutate()}
+              disabled={dailyReportMutation.isPending}
+              className="gap-2"
+              data-testid="button-send-daily-report"
+            >
+              {dailyReportMutation.isPending ? (
+                <><RefreshCw className="h-4 w-4 animate-spin" />Sending Report...</>
+              ) : (
+                <><Mail className="h-4 w-4" />Send Daily Report Now</>
+              )}
+            </Button>
+            {dailyReportMutation.data && (
+              <Alert className={(dailyReportMutation.data as any).success ? "border-green-500 bg-green-50 dark:bg-green-950/30" : "border-red-500 bg-red-50 dark:bg-red-950/30"}>
+                {(dailyReportMutation.data as any).success
+                  ? <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  : <AlertCircle className="h-4 w-4 text-red-600" />}
+                <AlertDescription className="text-xs">
+                  {(dailyReportMutation.data as any).success
+                    ? `✅ ${(dailyReportMutation.data as any).message}`
+                    : `❌ ${(dailyReportMutation.data as any).message || "Failed to send report"}`}
+                </AlertDescription>
+              </Alert>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Note: The daily report is also scheduled to send automatically at 08:00 HKT every morning.
+            </p>
           </CardContent>
         </Card>
 
