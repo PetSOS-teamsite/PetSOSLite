@@ -11,12 +11,11 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertCircle, CheckCircle2, Send, RefreshCw, Phone, MessageCircle,
-  Key, Globe, Zap, FileText, ExternalLink, Info, Copy, Mail
+  Key, Globe, Zap, FileText, ExternalLink, Info, Copy, Mail, ArrowRight, Star
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-// Expected template names PetSOS uses
 const REQUIRED_TEMPLATES = [
   { name: "emergency_pet_alert_basic_en", lang: "en", desc: "Basic alert (no profile) — English" },
   { name: "emergency_pet_alert_basic_zh_hk", lang: "zh_HK", desc: "Basic alert (no profile) — 繁體中文" },
@@ -27,13 +26,13 @@ const REQUIRED_TEMPLATES = [
 ];
 
 const TEST_TEMPLATES = [
-  { name: "hello_world", lang: "en", desc: "✅ Pre-approved by Meta — use this to test connection now" },
+  { name: "hello_world", lang: "en", desc: "Pre-approved by Meta — use this to test connection now" },
   ...REQUIRED_TEMPLATES,
 ];
 
 function StatusDot({ ok }: { ok: boolean }) {
   return (
-    <span className={`inline-block h-2.5 w-2.5 rounded-full flex-shrink-0 ${ok ? "bg-green-500" : "bg-red-500"}`} />
+    <span className={`inline-block h-2.5 w-2.5 rounded-full flex-shrink-0 mt-0.5 ${ok ? "bg-green-500" : "bg-red-500"}`} />
   );
 }
 
@@ -55,7 +54,6 @@ export default function AdminDiagnosticsPage() {
   const [testMessage, setTestMessage] = useState("PetSOS WhatsApp Test — please ignore.");
   const [selectedTemplate, setSelectedTemplate] = useState("hello_world");
 
-  // Fetch WhatsApp status (credentials + phone info + templates from Meta)
   const {
     data: waStatus,
     isLoading: loadingStatus,
@@ -66,7 +64,6 @@ export default function AdminDiagnosticsPage() {
     refetchOnWindowFocus: false,
   });
 
-  // Get failed messages
   const {
     data: failedMessages,
     isLoading: loadingFailed,
@@ -75,7 +72,6 @@ export default function AdminDiagnosticsPage() {
     queryKey: ["/api/admin/failed-messages"],
   });
 
-  // Send free-text test message
   const testTextMutation = useMutation({
     mutationFn: async (data: { phoneNumber: string; message: string }) => {
       const res = await apiRequest("POST", "/api/admin/test-whatsapp", data);
@@ -93,7 +89,6 @@ export default function AdminDiagnosticsPage() {
     },
   });
 
-  // Send test template message
   const testTemplateMutation = useMutation({
     mutationFn: async (data: { phoneNumber: string; templateName: string }) => {
       const res = await apiRequest("POST", "/api/admin/test-whatsapp-template", data);
@@ -111,7 +106,6 @@ export default function AdminDiagnosticsPage() {
     },
   });
 
-  // Send daily report email
   const dailyReportMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/admin/daily-report/send", {});
@@ -135,7 +129,6 @@ export default function AdminDiagnosticsPage() {
   const tokenError: string | null = waStatus?.tokenError || null;
   const isTokenExpired = !!tokenError?.startsWith("TOKEN_EXPIRED");
 
-  // Cross-reference required vs live templates
   const templateStatus = REQUIRED_TEMPLATES.map((req) => {
     const live = liveTemplates.find((t: any) => t.name === req.name);
     return { ...req, live, status: live?.status || "missing" };
@@ -144,14 +137,55 @@ export default function AdminDiagnosticsPage() {
   const allTemplatesApproved = !isTokenExpired && templateStatus.every((t) => t.status === "APPROVED");
   const credentialsOk = cred?.hasAccessToken && cred?.hasPhoneNumberId && cred?.hasBusinessAccountId && !isTokenExpired;
   const phoneOk = phoneInfo && !phoneInfo.error;
-
-  // Webhook URL — matches the actual route registered in server/routes.ts
   const webhookUrl = `https://petsos.site/api/webhooks/whatsapp`;
+
+  // Build dynamic next steps
+  const nextSteps = [
+    {
+      done: !!credentialsOk,
+      label: "Set WhatsApp credentials",
+      detail: "WHATSAPP_ACCESS_TOKEN, PHONE_NUMBER_ID, BUSINESS_ACCOUNT_ID in Render env vars",
+      link: "https://business.facebook.com/settings/system-users/",
+      linkLabel: "Get System User token →",
+    },
+    {
+      done: !!phoneOk,
+      label: "Verify phone number is active",
+      detail: "Phone number must show as connected in Meta → WhatsApp → API Setup",
+      link: "https://developers.facebook.com/apps/",
+      linkLabel: "Meta App Dashboard →",
+    },
+    {
+      done: allTemplatesApproved,
+      label: "Submit all 6 message templates to Meta",
+      detail: `${templateStatus.filter(t => t.status === "APPROVED").length}/6 approved — create them in Meta Business Manager (24–48h review)`,
+      link: "https://business.facebook.com/wa/manage/message-templates/",
+      linkLabel: "Message Templates Manager →",
+    },
+    {
+      done: !!cred?.hasWebhookToken,
+      label: "Register webhook in Meta",
+      detail: `URL: ${webhookUrl} — go to Meta App Dashboard → left sidebar → WhatsApp → Configuration (not the top-level Webhooks tab)`,
+      link: "https://developers.facebook.com/apps/",
+      linkLabel: "Open Meta App Dashboard →",
+    },
+    {
+      done: false,
+      label: "Send hello_world template test to your phone",
+      detail: "Use the template test section below — confirms end-to-end delivery works",
+      link: null,
+      linkLabel: null,
+    },
+  ];
+
+  const completedSteps = nextSteps.filter(s => s.done).length;
 
   return (
     <>
       <SEO noindex={true} />
       <div className="container mx-auto p-4 sm:p-6 max-w-5xl space-y-6">
+
+        {/* Header */}
         <div className="mb-2">
           <h1 className="text-2xl sm:text-3xl font-bold mb-1 flex items-center gap-2">
             <MessageCircle className="h-7 w-7 text-green-600" />
@@ -162,13 +196,13 @@ export default function AdminDiagnosticsPage() {
           </p>
         </div>
 
-        {/* ─── CRITICAL: Token Expired Banner ─── */}
+        {/* ─── Token Expired Banner ─── */}
         {isTokenExpired && (
           <Alert className="border-red-500 bg-red-50 dark:bg-red-950/40" data-testid="alert-token-expired">
             <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
             <AlertDescription>
               <p className="font-bold text-red-700 dark:text-red-400 text-base mb-2">
-                🚨 Access Token Expired — No messages can be sent until this is fixed
+                🚨 Access Token Expired — no messages can be sent until this is fixed
               </p>
               <p className="text-sm text-red-700 dark:text-red-400 mb-3">
                 {tokenError?.replace("TOKEN_EXPIRED: ", "")}
@@ -179,14 +213,13 @@ export default function AdminDiagnosticsPage() {
                   <li>Go to <a href="https://business.facebook.com/settings/system-users/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline inline-flex items-center gap-0.5">Meta Business Settings → System Users <ExternalLink className="h-3 w-3" /></a></li>
                   <li>Select (or create) a System User with <strong>ADMIN</strong> role</li>
                   <li>Click <strong>"Generate New Token"</strong> → select your WhatsApp app</li>
-                  <li>Grant permissions: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded text-xs">whatsapp_business_messaging</code> and <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded text-xs">whatsapp_business_management</code></li>
-                  <li>Set expiry to <strong>"Never"</strong> (System User tokens can be permanent)</li>
-                  <li>Copy the token and update the <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded text-xs">WHATSAPP_ACCESS_TOKEN</code> secret in Replit</li>
+                  <li>Grant: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded text-xs">whatsapp_business_messaging</code> and <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded text-xs">whatsapp_business_management</code></li>
+                  <li>Set expiry to <strong>"Never"</strong></li>
+                  <li>Paste the new token into <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded text-xs">WHATSAPP_ACCESS_TOKEN</code> on Render</li>
                 </ol>
                 <a href="https://business.facebook.com/settings/system-users/" target="_blank" rel="noopener noreferrer">
                   <Button size="sm" className="mt-2 bg-red-600 hover:bg-red-700 text-white gap-1">
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Open Meta Business Settings
+                    <ExternalLink className="h-3.5 w-3.5" /> Open Meta Business Settings
                   </Button>
                 </a>
               </div>
@@ -194,18 +227,56 @@ export default function AdminDiagnosticsPage() {
           </Alert>
         )}
 
-        {/* ─── Launch Readiness Summary ─── */}
-        <Card>
+        {/* ─── Next Steps (Dynamic Action Checklist) ─── */}
+        <Card className="border-2 border-dashed border-blue-200 dark:border-blue-800">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
-                <Zap className="h-4 w-4 text-yellow-500" />
-                Launch Readiness
+                <ArrowRight className="h-4 w-4 text-blue-500" />
+                Launch Checklist
+                <Badge variant="outline" className="ml-1 text-xs">{completedSteps}/{nextSteps.length} done</Badge>
               </CardTitle>
               <Button variant="ghost" size="sm" onClick={() => refetchStatus()} disabled={loadingStatus}>
                 <RefreshCw className={`h-4 w-4 ${loadingStatus ? "animate-spin" : ""}`} />
               </Button>
             </div>
+            <CardDescription className="text-xs">Complete these in order before going live</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingStatus ? (
+              <p className="text-sm text-muted-foreground">Checking status...</p>
+            ) : (
+              <ol className="space-y-3">
+                {nextSteps.map((step, i) => (
+                  <li key={i} className={`flex items-start gap-3 p-2.5 rounded-lg ${step.done ? "bg-green-50 dark:bg-green-950/20" : "bg-gray-50 dark:bg-gray-800/30"}`}>
+                    <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold mt-0.5 ${step.done ? "bg-green-500 text-white" : "bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200"}`}>
+                      {step.done ? "✓" : i + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-semibold ${step.done ? "text-green-700 dark:text-green-400 line-through" : "text-gray-800 dark:text-gray-200"}`}>
+                        {step.label}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{step.detail}</p>
+                      {!step.done && step.link && (
+                        <a href={step.link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1 mt-1">
+                          {step.linkLabel} <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ─── Launch Readiness Summary ─── */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Zap className="h-4 w-4 text-yellow-500" />
+              System Status
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {loadingStatus ? (
@@ -217,10 +288,10 @@ export default function AdminDiagnosticsPage() {
                     label: "API credentials set",
                     ok: !!credentialsOk,
                     detail: isTokenExpired
-                      ? "Token expired — generate a new System User token in Meta Business Settings"
+                      ? "Token expired — generate a new System User token"
                       : credentialsOk
                       ? "Token, Phone ID & Business Account ID all present"
-                      : "One or more credentials missing — see Credentials section below",
+                      : "One or more credentials missing",
                   },
                   {
                     label: "Phone number verified",
@@ -240,8 +311,8 @@ export default function AdminDiagnosticsPage() {
                     label: "Webhook verify token set",
                     ok: !!cred?.hasWebhookToken,
                     detail: cred?.hasWebhookToken
-                      ? `Webhook URL: ${webhookUrl}`
-                      : "WHATSAPP_WEBHOOK_VERIFY_TOKEN secret not set — hospitals cannot reply until this is configured. Add any random string as this secret, then register the same value in Meta App → WhatsApp → Configuration.",
+                      ? `Registered at ${webhookUrl}`
+                      : "WHATSAPP_WEBHOOK_VERIFY_TOKEN not set — hospitals cannot reply",
                   },
                 ].map((item) => (
                   <div key={item.label} className="flex items-start gap-3 py-1.5">
@@ -267,7 +338,7 @@ export default function AdminDiagnosticsPage() {
               Credentials
             </CardTitle>
             <CardDescription className="text-xs">
-              Set these in the Replit Secrets pane. Never commit them to code.
+              Set these in Render → Environment tab. Never commit them to code.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -280,25 +351,25 @@ export default function AdminDiagnosticsPage() {
                     key: "WHATSAPP_ACCESS_TOKEN",
                     ok: cred.hasAccessToken,
                     detail: cred.hasAccessToken ? `${cred.accessTokenLength} chars` : "Not set",
-                    link: "https://developers.facebook.com/apps/",
-                    linkLabel: "Meta App Dashboard",
+                    link: "https://business.facebook.com/settings/system-users/",
+                    linkLabel: "Get token →",
                   },
                   {
                     key: "WHATSAPP_PHONE_NUMBER_ID",
                     ok: cred.hasPhoneNumberId,
-                    detail: cred.phoneNumberId || "Not set",
+                    detail: cred.phoneNumberId || "Not set — find in Meta → WhatsApp → API Setup",
                     link: null,
                   },
                   {
                     key: "WHATSAPP_BUSINESS_ACCOUNT_ID",
                     ok: cred.hasBusinessAccountId,
-                    detail: cred.businessAccountId || "Not set",
+                    detail: cred.businessAccountId || "Not set — find in Meta Business Manager → Business Info",
                     link: null,
                   },
                   {
                     key: "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
                     ok: cred.hasWebhookToken,
-                    detail: cred.hasWebhookToken ? "Set (value hidden)" : "Not set — needed for webhook verification",
+                    detail: cred.hasWebhookToken ? "Set ✓" : "Not set — use petsos-webhook-2026",
                     link: null,
                   },
                 ].map((item) => (
@@ -359,10 +430,11 @@ export default function AdminDiagnosticsPage() {
               Message Templates
             </CardTitle>
             <CardDescription className="text-xs">
-              All 6 templates must be APPROVED on Meta before going live. Create them in the{" "}
+              All 6 must be APPROVED before broadcasts work. Create them in{" "}
               <a href="https://business.facebook.com/wa/manage/message-templates/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline inline-flex items-center gap-0.5">
                 Meta Business Manager <ExternalLink className="h-3 w-3" />
               </a>
+              {" "}under Utility category. Meta reviews within 24–48h.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -412,12 +484,21 @@ export default function AdminDiagnosticsPage() {
               Webhook Configuration
             </CardTitle>
             <CardDescription className="text-xs">
-              Configure this in the Meta App Dashboard → WhatsApp → Configuration
+              Paste these into Meta App Dashboard
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            <Alert className="border-amber-300 bg-amber-50 dark:bg-amber-950/30">
+              <Info className="h-4 w-4 text-amber-600 flex-shrink-0" />
+              <AlertDescription className="text-xs">
+                <strong>Important — navigate to the correct page:</strong> In the Meta App Dashboard, look at the
+                left sidebar → click <strong>WhatsApp</strong> to expand it → click <strong>Configuration</strong>
+                underneath it. Do <em>not</em> use the top-level "Webhooks" tab — that shows Facebook Page fields,
+                not WhatsApp. After verifying, subscribe to the <strong>messages</strong> field.
+              </AlertDescription>
+            </Alert>
             <div className="space-y-1">
-              <Label className="text-xs">Callback URL (Webhook URL)</Label>
+              <Label className="text-xs">Callback URL</Label>
               <div className="flex items-center gap-2">
                 <code className="flex-1 text-xs bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded font-mono break-all">
                   {webhookUrl}
@@ -429,21 +510,19 @@ export default function AdminDiagnosticsPage() {
               <Label className="text-xs">Verify Token</Label>
               <div className="flex items-center gap-2">
                 <code className="flex-1 text-xs bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded font-mono">
-                  {cred?.hasWebhookToken ? "(stored in WHATSAPP_WEBHOOK_VERIFY_TOKEN secret)" : "❌ Not set"}
+                  {cred?.hasWebhookToken ? "(stored in WHATSAPP_WEBHOOK_VERIFY_TOKEN)" : "❌ Not set — set petsos-webhook-2026 in Render"}
                 </code>
               </div>
             </div>
-            <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/30">
-              <Info className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-xs">
-                Subscribe to the <strong>messages</strong> webhook field. The webhook receives inbound hospital replies
-                and delivery receipts. Make sure your deployed domain (not dev) is registered in Meta.
-              </AlertDescription>
-            </Alert>
+            <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <ExternalLink className="h-3.5 w-3.5" /> Open Meta App Dashboard
+              </Button>
+            </a>
           </CardContent>
         </Card>
 
-        {/* ─── Live Test Section ─── */}
+        {/* ─── Live Message Tests ─── */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -451,13 +530,25 @@ export default function AdminDiagnosticsPage() {
               Live Message Tests
             </CardTitle>
             <CardDescription className="text-xs">
-              Send real messages to your phone to verify end-to-end delivery.
+              Send real messages to verify end-to-end delivery.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Free text test */}
+
+            {/* ── RECOMMENDED: Template test ── */}
             <div className="space-y-3">
-              <p className="text-sm font-semibold">1. Free-text message (only works if number has messaged PetSOS first)</p>
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4 text-yellow-500 fill-yellow-400" />
+                <p className="text-sm font-semibold">Send Template Message</p>
+                <Badge className="bg-green-600 text-white text-xs">Recommended</Badge>
+              </div>
+              <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20 py-2.5">
+                <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                <AlertDescription className="text-xs">
+                  Start with <strong>hello_world</strong> — it's pre-approved by Meta and works immediately to any WhatsApp number.
+                  Once your 6 PetSOS templates are approved, switch to <strong>emergency_pet_alert_basic_en</strong> for a full test.
+                </AlertDescription>
+              </Alert>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
                   <Label className="text-xs">Phone Number</Label>
@@ -466,6 +557,76 @@ export default function AdminDiagnosticsPage() {
                     value={testPhone}
                     onChange={(e) => setTestPhone(e.target.value)}
                     data-testid="input-test-phone"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Template</Label>
+                  <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                    <SelectTrigger data-testid="select-template">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TEST_TEMPLATES.map((t) => (
+                        <SelectItem key={t.name} value={t.name}>
+                          <span className="font-mono text-xs">{t.name}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {TEST_TEMPLATES.find(t => t.name === selectedTemplate)?.desc}
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => testTemplateMutation.mutate({ phoneNumber: testPhone, templateName: selectedTemplate })}
+                disabled={testTemplateMutation.isPending}
+                className="bg-green-600 hover:bg-green-700"
+                data-testid="button-test-template"
+              >
+                {testTemplateMutation.isPending
+                  ? <><RefreshCw className="mr-2 h-4 w-4 animate-spin" />Sending...</>
+                  : <><Send className="mr-2 h-4 w-4" />Send Template</>}
+              </Button>
+              {testTemplateMutation.data && (
+                <Alert className={(testTemplateMutation.data as any).success ? "border-green-500 bg-green-50 dark:bg-green-950/30" : "border-red-500 bg-red-50 dark:bg-red-950/30"}>
+                  {(testTemplateMutation.data as any).success
+                    ? <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    : <AlertCircle className="h-4 w-4 text-red-600" />}
+                  <AlertDescription className="text-xs">
+                    {(testTemplateMutation.data as any).success
+                      ? `✅ Template sent! Message ID: ${(testTemplateMutation.data as any).messageId}`
+                      : `❌ ${(testTemplateMutation.data as any).error}`}
+                    {(testTemplateMutation.data as any).details && (
+                      <pre className="mt-2 p-2 bg-white dark:bg-gray-900 rounded overflow-x-auto text-xs">
+                        {JSON.stringify((testTemplateMutation.data as any).details, null, 2)}
+                      </pre>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* ── Free-text test (secondary) ── */}
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-muted-foreground">Free-text Message</p>
+              <Alert className="border-amber-300 bg-amber-50 dark:bg-amber-950/30 py-2.5">
+                <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                <AlertDescription className="text-xs">
+                  <strong>Limited use:</strong> Free-text messages only work if the recipient has messaged the PetSOS
+                  WhatsApp number first within the last 24 hours. Use the template test above instead for general testing.
+                </AlertDescription>
+              </Alert>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Phone Number</Label>
+                  <Input
+                    placeholder="+85265727136"
+                    value={testPhone}
+                    onChange={(e) => setTestPhone(e.target.value)}
+                    data-testid="input-test-phone-text"
                   />
                 </div>
                 <div className="space-y-1">
@@ -484,11 +645,15 @@ export default function AdminDiagnosticsPage() {
                 variant="outline"
                 data-testid="button-test-whatsapp"
               >
-                {testTextMutation.isPending ? <><RefreshCw className="mr-2 h-4 w-4 animate-spin" />Sending...</> : <><Send className="mr-2 h-4 w-4" />Send Text</>}
+                {testTextMutation.isPending
+                  ? <><RefreshCw className="mr-2 h-4 w-4 animate-spin" />Sending...</>
+                  : <><Send className="mr-2 h-4 w-4" />Send Text</>}
               </Button>
               {testTextMutation.data && (
                 <Alert className={(testTextMutation.data as any).success ? "border-green-500 bg-green-50 dark:bg-green-950/30" : "border-red-500 bg-red-50 dark:bg-red-950/30"} data-testid="alert-test-result">
-                  {(testTextMutation.data as any).success ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <AlertCircle className="h-4 w-4 text-red-600" />}
+                  {(testTextMutation.data as any).success
+                    ? <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    : <AlertCircle className="h-4 w-4 text-red-600" />}
                   <AlertDescription className="text-xs">
                     {(testTextMutation.data as any).success
                       ? `✅ Sent! Message ID: ${(testTextMutation.data as any).debugInfo?.messageId}`
@@ -502,69 +667,10 @@ export default function AdminDiagnosticsPage() {
                 </Alert>
               )}
             </div>
-
-            <Separator />
-
-            {/* Template test */}
-            <div className="space-y-3">
-              <p className="text-sm font-semibold">2. Approved template message (works to any number)</p>
-              <p className="text-xs text-muted-foreground">
-                This sends a real emergency alert template with placeholder data — perfect for hospital onboarding demos.
-              </p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <Label className="text-xs">Phone Number</Label>
-                  <Input
-                    placeholder="+85265727136"
-                    value={testPhone}
-                    onChange={(e) => setTestPhone(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Template</Label>
-                  <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                    <SelectTrigger data-testid="select-template">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TEST_TEMPLATES.map((t) => (
-                        <SelectItem key={t.name} value={t.name}>
-                          <span className="font-mono text-xs">{t.name}</span>
-                          <span className="ml-2 text-muted-foreground text-xs">{t.desc}</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <Button
-                onClick={() => testTemplateMutation.mutate({ phoneNumber: testPhone, templateName: selectedTemplate })}
-                disabled={testTemplateMutation.isPending}
-                className="bg-green-600 hover:bg-green-700"
-                data-testid="button-test-template"
-              >
-                {testTemplateMutation.isPending ? <><RefreshCw className="mr-2 h-4 w-4 animate-spin" />Sending...</> : <><Send className="mr-2 h-4 w-4" />Send Template</>}
-              </Button>
-              {testTemplateMutation.data && (
-                <Alert className={(testTemplateMutation.data as any).success ? "border-green-500 bg-green-50 dark:bg-green-950/30" : "border-red-500 bg-red-50 dark:bg-red-950/30"}>
-                  {(testTemplateMutation.data as any).success ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <AlertCircle className="h-4 w-4 text-red-600" />}
-                  <AlertDescription className="text-xs">
-                    {(testTemplateMutation.data as any).success
-                      ? `✅ Template sent! Message ID: ${(testTemplateMutation.data as any).messageId}`
-                      : `❌ ${(testTemplateMutation.data as any).error}`}
-                    {(testTemplateMutation.data as any).details && (
-                      <pre className="mt-2 p-2 bg-white dark:bg-gray-900 rounded overflow-x-auto text-xs">
-                        {JSON.stringify((testTemplateMutation.data as any).details, null, 2)}
-                      </pre>
-                    )}
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
           </CardContent>
         </Card>
 
-        {/* ─── Daily Report Email ─── */}
+        {/* ─── Daily Report ─── */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -572,7 +678,7 @@ export default function AdminDiagnosticsPage() {
               Daily Operations Report
             </CardTitle>
             <CardDescription className="text-xs">
-              Send the daily case summary email to all configured recipients (DAILY_REPORT_EMAIL env var). Covers the last 24 hours split into 3×8-hour periods.
+              Sends a 24-hour case summary to DAILY_REPORT_EMAIL. Also runs automatically at 08:00 HKT.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -582,11 +688,9 @@ export default function AdminDiagnosticsPage() {
               className="gap-2"
               data-testid="button-send-daily-report"
             >
-              {dailyReportMutation.isPending ? (
-                <><RefreshCw className="h-4 w-4 animate-spin" />Sending Report...</>
-              ) : (
-                <><Mail className="h-4 w-4" />Send Daily Report Now</>
-              )}
+              {dailyReportMutation.isPending
+                ? <><RefreshCw className="h-4 w-4 animate-spin" />Sending Report...</>
+                : <><Mail className="h-4 w-4" />Send Daily Report Now</>}
             </Button>
             {dailyReportMutation.data && (
               <Alert className={(dailyReportMutation.data as any).success ? "border-green-500 bg-green-50 dark:bg-green-950/30" : "border-red-500 bg-red-50 dark:bg-red-950/30"}>
@@ -600,9 +704,6 @@ export default function AdminDiagnosticsPage() {
                 </AlertDescription>
               </Alert>
             )}
-            <p className="text-xs text-muted-foreground">
-              Note: The daily report is also scheduled to send automatically at 08:00 HKT every morning.
-            </p>
           </CardContent>
         </Card>
 
@@ -614,9 +715,7 @@ export default function AdminDiagnosticsPage() {
                 <AlertCircle className="h-4 w-4 text-red-500" />
                 Failed Messages
               </CardTitle>
-              <CardDescription className="text-xs">
-                Messages that failed to deliver via WhatsApp
-              </CardDescription>
+              <CardDescription className="text-xs">Messages that failed to deliver via WhatsApp</CardDescription>
             </div>
             <Button variant="ghost" size="sm" onClick={() => refetchFailed()} disabled={loadingFailed} data-testid="button-refresh-failed">
               <RefreshCw className={`h-4 w-4 ${loadingFailed ? "animate-spin" : ""}`} />
@@ -652,14 +751,14 @@ export default function AdminDiagnosticsPage() {
             <CardTitle className="text-base">Useful Links</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
               {[
                 { label: "Meta App Dashboard", url: "https://developers.facebook.com/apps/" },
                 { label: "Message Templates Manager", url: "https://business.facebook.com/wa/manage/message-templates/" },
-                { label: "WhatsApp Business Manager", url: "https://business.facebook.com/wa/manage/phone-numbers/" },
+                { label: "WhatsApp Phone Numbers", url: "https://business.facebook.com/wa/manage/phone-numbers/" },
+                { label: "System User Tokens", url: "https://business.facebook.com/settings/system-users/" },
                 { label: "Cloud API Docs", url: "https://developers.facebook.com/docs/whatsapp/cloud-api/" },
                 { label: "Webhook Setup Guide", url: "https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks" },
-                { label: "System User Tokens", url: "https://business.facebook.com/settings/system-users/" },
               ].map((link) => (
                 <a
                   key={link.url}
@@ -675,6 +774,7 @@ export default function AdminDiagnosticsPage() {
             </div>
           </CardContent>
         </Card>
+
       </div>
     </>
   );
