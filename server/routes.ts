@@ -3732,7 +3732,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
       const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
-      const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v17.0';
+      const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v21.0';
 
       // Debug logging
       console.log('[WhatsApp Test] DEBUG - Checking credentials...');
@@ -3829,7 +3829,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
       const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
       const businessAccountId = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
-      const apiUrl = process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v17.0';
+      const apiUrl = process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v21.0';
       const webhookVerifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
 
       const credentialStatus = {
@@ -3901,7 +3901,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
       const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-      const apiUrl = process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v17.0';
+      const apiUrl = process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v21.0';
 
       if (!accessToken || !phoneNumberId) {
         return res.status(400).json({ success: false, error: 'WhatsApp credentials not configured' });
@@ -4069,7 +4069,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send via WhatsApp API
       const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
       const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
-      const WHATSAPP_API_URL = 'https://graph.facebook.com/v17.0';
+      const WHATSAPP_API_URL = 'https://graph.facebook.com/v21.0';
       
       if (!WHATSAPP_ACCESS_TOKEN || !WHATSAPP_PHONE_NUMBER_ID) {
         return res.status(500).json({ message: "WhatsApp not configured" });
@@ -4189,7 +4189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send via WhatsApp API
       const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
       const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
-      const WHATSAPP_API_URL = 'https://graph.facebook.com/v17.0';
+      const WHATSAPP_API_URL = 'https://graph.facebook.com/v21.0';
       
       if (!WHATSAPP_ACCESS_TOKEN || !WHATSAPP_PHONE_NUMBER_ID) {
         return res.status(500).json({ message: "WhatsApp not configured" });
