@@ -5,7 +5,7 @@ const DAILY_PING_INTERVAL_MS = 60 * 60 * 1000;
 const NO_REPLY_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 const PING_MESSAGE = "Hi 👋 Just checking availability - PetSOS";
 
-const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v17.0';
+const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v21.0';
 const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 
@@ -27,11 +27,15 @@ async function sendWhatsAppPingMessage(phoneNumber: string): Promise<{ success: 
 
   try {
     const url = `${WHATSAPP_API_URL}/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
+    // Use hello_world template (pre-approved by Meta) so ping works outside the 24h session window
     const payload = {
       messaging_product: 'whatsapp',
       to: cleanedNumber,
-      type: 'text',
-      text: { body: PING_MESSAGE }
+      type: 'template',
+      template: {
+        name: 'hello_world',
+        language: { code: 'en_US' }
+      }
     };
 
     const response = await fetch(url, {

@@ -4688,7 +4688,7 @@ var schedulerInterval = null;
 var typhoonQueueInterval = null;
 var isProcessing = false;
 var isTyphoonQueueProcessing = false;
-var WHATSAPP_API_URL2 = process.env.WHATSAPP_API_URL || "https://graph.facebook.com/v17.0";
+var WHATSAPP_API_URL2 = process.env.WHATSAPP_API_URL || "https://graph.facebook.com/v21.0";
 var WHATSAPP_PHONE_NUMBER_ID2 = process.env.WHATSAPP_PHONE_NUMBER_ID;
 var WHATSAPP_ACCESS_TOKEN2 = process.env.WHATSAPP_ACCESS_TOKEN;
 async function processScheduledNotifications() {
@@ -5639,8 +5639,7 @@ function isEncryptedSecret(secret) {
 // server/services/hospital-ping-scheduler.ts
 var DAILY_PING_INTERVAL_MS = 60 * 60 * 1e3;
 var NO_REPLY_CHECK_INTERVAL_MS = 60 * 60 * 1e3;
-var PING_MESSAGE = "Hi \u{1F44B} Just checking availability - PetSOS";
-var WHATSAPP_API_URL3 = process.env.WHATSAPP_API_URL || "https://graph.facebook.com/v17.0";
+var WHATSAPP_API_URL3 = process.env.WHATSAPP_API_URL || "https://graph.facebook.com/v21.0";
 var WHATSAPP_PHONE_NUMBER_ID3 = process.env.WHATSAPP_PHONE_NUMBER_ID;
 var WHATSAPP_ACCESS_TOKEN3 = process.env.WHATSAPP_ACCESS_TOKEN;
 var dailyPingInterval = null;
@@ -5661,8 +5660,11 @@ async function sendWhatsAppPingMessage(phoneNumber) {
     const payload = {
       messaging_product: "whatsapp",
       to: cleanedNumber,
-      type: "text",
-      text: { body: PING_MESSAGE }
+      type: "template",
+      template: {
+        name: "hello_world",
+        language: { code: "en_US" }
+      }
     };
     const response = await fetch(url, {
       method: "POST",
