@@ -23,7 +23,8 @@ const BUILD_VERSION = "2025-12-04-capacitor-mobile-ready";
 // Lazy-loaded pages - only load when needed
 import EmergencyPage from "./pages/emergency";
 //const EmergencyPage = lazy(() => import("@/pages/emergency"));
-const ClinicResultsPage = lazy(() => import("@/pages/clinic-results"));
+import ClinicResultsPage from "@/pages/clinic-results";
+//const ClinicResultsPage = lazy(() => import("@/pages/clinic-results"));
 const MessageStatusPage = lazy(() => import("@/pages/message-status"));
 const EmergencyProfilePage = lazy(() => import("@/pages/emergency-profile"));
 const ProfilePage = lazy(() => import("@/pages/profile"));
