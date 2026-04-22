@@ -10,7 +10,7 @@ import { SEO } from "@/components/SEO";
 interface Message {
   id: string;
   emergencyRequestId: string;
-  clinicId: string;
+  hospitalId: string;
   messageType: string;
   recipient: string;
   content: string;
@@ -56,8 +56,8 @@ export default function MessageStatusPage() {
     queryKey: ['/api/clinics'],
   });
 
-  const getClinicName = (clinicId: string) => {
-    const clinic = clinics.find(c => c.id === clinicId);
+  const getClinicName = (hospitalId: string) => {
+    const clinic = clinics.find(c => c.id === hospitalId);
     return clinic?.name || 'Unknown Clinic';
   };
 
@@ -249,7 +249,7 @@ export default function MessageStatusPage() {
                     <div className="flex-1">
                       <CardTitle className="text-lg flex items-center gap-2">
                         {getMessageTypeIcon(message.messageType)}
-                        {getClinicName(message.clinicId)}
+                        {getClinicName(message.hospitalId)}
                       </CardTitle>
                       <CardDescription className="mt-1">
                         To: {message.recipient}
