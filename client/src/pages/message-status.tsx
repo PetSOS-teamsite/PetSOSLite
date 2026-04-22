@@ -23,7 +23,7 @@ interface Message {
   createdAt: string;
 }
 
-interface Clinic {
+interface Hospital {
   id: string;
   name: string;
   nameZh: string | null;
@@ -52,13 +52,13 @@ export default function MessageStatusPage() {
     refetchInterval: 5000, // Refresh every 5 seconds to get latest status
   });
 
-  const { data: clinics = [] } = useQuery<Clinic[]>({
-    queryKey: ['/api/clinics'],
+  const { data: hospitals = [] } = useQuery<Hospital[]>({
+    queryKey: ['/api/hospitals'],
   });
 
-  const getClinicName = (hospitalId: string) => {
-    const clinic = clinics.find(c => c.id === hospitalId);
-    return clinic?.name || 'Unknown Clinic';
+  const getHospitalName = (hospitalId: string) => {
+    const hospital = hospitals.find(c => c.id === hospitalId);
+    return hospital?.name || 'Unknown Clinic';
   };
 
   const getStatusBadge = (status: string) => {
@@ -249,7 +249,7 @@ export default function MessageStatusPage() {
                     <div className="flex-1">
                       <CardTitle className="text-lg flex items-center gap-2">
                         {getMessageTypeIcon(message.messageType)}
-                        {getClinicName(message.hospitalId)}
+                        {getHospitalName(message.hospitalId)}
                       </CardTitle>
                       <CardDescription className="mt-1">
                         To: {message.recipient}
