@@ -25,7 +25,7 @@ interface Message {
 
 interface Hospital {
   id: string;
-  name: string;
+  nameEn: string;
   nameZh: string | null;
 }
 
@@ -58,7 +58,7 @@ export default function MessageStatusPage() {
 
   const getHospitalName = (hospitalId: string) => {
     const hospital = hospitals.find(c => c.id === hospitalId);
-    return hospital?.name || 'Unknown Clinic';
+    return hospital?.nameEn || hospital?.nameZh || 'Unknown Clinic';
   };
 
   const getStatusBadge = (status: string) => {
