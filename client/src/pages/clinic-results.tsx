@@ -768,10 +768,17 @@ export default function ClinicResultsPage() {
   // Edit emergency request mutation
   const editRequestMutation = useMutation({
     mutationFn: async (data: typeof editFormData) => {
+      const payload = {
+        ...data,
+        locationLatitude:
+          data.locationLatitude === undefined ? undefined : String(data.locationLatitude),
+        locationLongitude:
+          data.locationLongitude === undefined ? undefined : String(data.locationLongitude),
+      };
       const response = await apiRequest(
         'PATCH',
         `/api/emergency-requests/${params?.requestId}`,
-        data
+        payload
       );
       return await response.json();
     },
