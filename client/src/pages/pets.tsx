@@ -615,10 +615,13 @@ export default function PetsPage() {
                                 </Button>
                               </FormControl>
                             </PopoverTrigger>
-                            <PopoverContent className="w-[400px] p-0">
+                            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                               <Command>
                                 <CommandInput placeholder={t("pets.last_visit_clinic_placeholder", "Search clinic...")} />
-                                <CommandList>
+                                <CommandList
+                                  className="max-h-64 overflow-y-auto overscroll-contain"
+                                  onWheel={(e) => e.stopPropagation()}
+                                >
                                   <CommandEmpty>{t("pets.no_clinic_selected", "No clinic selected")}</CommandEmpty>
                                   <CommandGroup>
                                     {clinics.map((clinic) => (

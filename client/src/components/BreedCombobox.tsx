@@ -115,14 +115,20 @@ export function BreedCombobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent
+        className="w-[var(--radix-popover-trigger-width)] p-0"
+        align="start"
+      >
         <Command shouldFilter={false}>
           <CommandInput 
             placeholder="Search or type breed..." 
             value={searchValue}
             onValueChange={handleInputChange}
           />
-          <CommandList>
+          <CommandList
+            className="max-h-64 overflow-y-auto overscroll-contain"
+            onWheel={(e) => e.stopPropagation()}
+          >
             <CommandEmpty>
               {searchValue ? (
                 <div className="py-2 px-4 text-center text-sm">
