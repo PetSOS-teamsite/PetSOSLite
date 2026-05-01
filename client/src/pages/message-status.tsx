@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, CheckCircle, Clock, XCircle, AlertCircle, Mail, MessageCircle, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SEO } from "@/components/SEO";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface Message {
   id: string;
@@ -40,6 +41,7 @@ interface EmergencyRequest {
 
 export default function MessageStatusPage() {
   const [, params] = useRoute("/emergency-results/:requestId/messages");
+  const { language } = useTranslation();
   
   const { data: emergencyRequest, isLoading: requestLoading } = useQuery<EmergencyRequest>({
     queryKey: ['/api/emergency-requests', params?.requestId],
@@ -57,8 +59,11 @@ export default function MessageStatusPage() {
   });
 
   const getHospitalName = (hospitalId: string) => {
-    const hospital = hospitals.find(c => c.id === hospitalId);
-    return hospital?.nameEn || hospital?.nameZh || 'Unknown Clinic';
+    const hospital = hospitals.find((h) => h.id === hospitalId);
+    if (!hospital) return 'Unknown Hospital';
+    return language === "zh-HK"
+      ? hospital.nameZh || hospital.nameEn
+      : hospital.nameEn || hospital.nameZh || 'Unknown Hospital';
   };
 
   const getStatusBadge = (status: string) => {
