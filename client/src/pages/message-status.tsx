@@ -42,7 +42,6 @@ interface EmergencyRequest {
 export default function MessageStatusPage() {
   const [, params] = useRoute("/emergency-results/:requestId/messages");
   const { language } = useTranslation();
-  const languageQuery = `?lang=${encodeURIComponent(language)}`;
   
   const { data: emergencyRequest, isLoading: requestLoading } = useQuery<EmergencyRequest>({
     queryKey: ['/api/emergency-requests', params?.requestId],
@@ -128,13 +127,14 @@ export default function MessageStatusPage() {
         title="Message Status - PetSOS"
         description="Track the status of your emergency broadcast messages"
         noindex={true}
+        language={language}
       />
       <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
         {/* Header */}
         <header className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-10">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center gap-4">
-              <Link href={`/emergency-results/${params?.requestId}${languageQuery}`}>
+              <Link href={`/emergency-results/${params?.requestId}`}>
                 <Button variant="ghost" size="icon" data-testid="button-back">
                   <ArrowLeft className="h-5 w-5" />
               </Button>
@@ -240,7 +240,7 @@ export default function MessageStatusPage() {
                 <p className="text-gray-500 dark:text-gray-400">
                   No broadcast messages found for this emergency request.
                 </p>
-                <Link href={`/emergency-results/${params?.requestId}${languageQuery}`}>
+                <Link href={`/emergency-results/${params?.requestId}`}>
                   <Button className="mt-4" data-testid="button-go-back">
                     Go Back to Results
                   </Button>

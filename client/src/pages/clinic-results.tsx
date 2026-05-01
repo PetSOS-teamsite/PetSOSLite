@@ -704,7 +704,6 @@ export default function ClinicResultsPage() {
   const broadcastTargetCount = selectedClinics.size > 0 
     ? selectedClinics.size 
     : filteredClinics.filter((h: Hospital) => h.whatsapp).length;
-  const languageQuery = `?lang=${encodeURIComponent(language)}`;
 
   // Count support hospitals (only available ones)
   const supportHospitals24h = allHospitals.filter((h: Hospital) => 
@@ -1376,7 +1375,7 @@ export default function ClinicResultsPage() {
             )}
           </div>
           <div className="flex gap-3">
-            <Link href={`/emergency-results/${params?.requestId}/messages${languageQuery}`}>
+            <Link href={`/emergency-results/${params?.requestId}/messages`}>
               <Button
                 variant="outline"
                 className="border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950"
