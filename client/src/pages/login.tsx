@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -48,24 +48,8 @@ const emailLoginSchema = z.object({
   countryCode: z.string().optional(),
 });
 
-const emailSignupSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  phone: z.string().optional(),
-  countryCode: z.string().optional(),
-});
-
 // Phone-specific schemas
 const phoneLoginSchema = z.object({
-  phone: z.string().min(1, "Phone number is required"),
-  countryCode: z.string().default("+852"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  email: z.string().optional(),
-});
-
-const phoneSignupSchema = z.object({
-  name: z.string().min(1, "Name is required"),
   phone: z.string().min(1, "Phone number is required"),
   countryCode: z.string().default("+852"),
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -300,8 +284,9 @@ export default function LoginPage() {
               <TabsTrigger value="phone" data-testid="tab-phone">{t("login.phone", "Phone")}</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="email">
-                {isSignup ? (
+            <TabsContent value={authMethod}>
+              {authMethod === "email" ? (
+                isSignup ? (
                   <Form {...signupForm}>
                     <form onSubmit={signupForm.handleSubmit(onSignup)} className="space-y-4">
                       <FormField
@@ -311,9 +296,9 @@ export default function LoginPage() {
                           <FormItem>
                             <FormLabel>Name</FormLabel>
                             <FormControl>
-                              <Input 
-                                {...field} 
-                                data-testid="input-name" 
+                              <Input
+                                {...field}
+                                data-testid="input-name"
                                 placeholder="Enter your name"
                               />
                             </FormControl>
@@ -321,95 +306,92 @@ export default function LoginPage() {
                           </FormItem>
                         )}
                       />
-                    <FormField
-                      control={signupForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input type="email" {...field} data-testid="input-email" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={signupForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" {...field} data-testid="input-password" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" data-testid="button-signup">
-                      Create Account
-                    </Button>
-                  </form>
-                </Form>
-              ) : (
-                <Form {...emailLoginForm}>
-                  <form onSubmit={emailLoginForm.handleSubmit(onLogin)} className="space-y-4">
-                    <FormField
-                      control={emailLoginForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input type="email" {...field} data-testid="input-email" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={emailLoginForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" {...field} data-testid="input-password" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" data-testid="button-login">
-                      Sign In
-                    </Button>
+                      <FormField
+                        control={signupForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input type="email" {...field} data-testid="input-email" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={signupForm.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <FormControl>
+                              <Input type="password" {...field} data-testid="input-password" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" data-testid="button-signup">
+                        Create Account
+                      </Button>
                     </form>
                   </Form>
-                )}
-            </TabsContent>
-            
-            <TabsContent value="phone">
-                {isSignup ? (
-                  <Form {...signupForm}>
-                    <form onSubmit={signupForm.handleSubmit(onSignup)} className="space-y-4">
+                ) : (
+                  <Form {...emailLoginForm}>
+                    <form onSubmit={emailLoginForm.handleSubmit(onLogin)} className="space-y-4">
                       <FormField
-                        control={signupForm.control}
-                        name="name"
+                        control={emailLoginForm.control}
+                        name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Name</FormLabel>
+                            <FormLabel>Email</FormLabel>
                             <FormControl>
-                              <Input 
-                                {...field} 
-                                data-testid="input-name-phone" 
-                                placeholder="Enter your name"
-                              />
+                              <Input type="email" {...field} data-testid="input-email" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
+                      <FormField
+                        control={emailLoginForm.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <FormControl>
+                              <Input type="password" {...field} data-testid="input-password" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" data-testid="button-login">
+                        Sign In
+                      </Button>
+                    </form>
+                  </Form>
+                )
+              ) : isSignup ? (
+                <Form {...signupForm}>
+                  <form onSubmit={signupForm.handleSubmit(onSignup)} className="space-y-4">
+                    <FormField
+                      control={signupForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              data-testid="input-name-phone"
+                              placeholder="Enter your name"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <FormField
                       control={signupForm.control}
                       name="phone"
