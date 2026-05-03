@@ -16,6 +16,8 @@ interface PhoneInputProps {
   onCountryCodeChange: (code: string) => void;
   placeholder?: string;
   testId?: string;
+  autoComplete?: string;
+  name?: string;
 }
 
 const FALLBACK_COUNTRIES: Partial<Country>[] = [
@@ -31,6 +33,8 @@ export function PhoneInput({
   onCountryCodeChange,
   placeholder = "1234 5678",
   testId,
+  autoComplete,
+  name,
 }: PhoneInputProps) {
   const { data: countries = [], isLoading, isError } = useQuery<Country[]>({
     queryKey: ["/api/countries"],
@@ -83,12 +87,14 @@ export function PhoneInput({
       )}
       <Input
         type="tel"
+        name={name}
         value={value || ""}
         onChange={handleInputChange}
         placeholder={placeholder}
         className="flex-1"
         data-testid={testId}
-        autoComplete="tel"
+        autoComplete={autoComplete ?? "tel"}
+        inputMode="tel"
       />
     </div>
   );

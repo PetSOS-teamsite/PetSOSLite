@@ -289,7 +289,12 @@ export default function LoginPage() {
           {authMethod === "email" ? (
             isSignup ? (
               <Form {...signupForm}>
-                <form onSubmit={signupForm.handleSubmit(onSignup)} className="space-y-4">
+                <form
+                  key="signup-email"
+                  onSubmit={signupForm.handleSubmit(onSignup)}
+                  className="space-y-4"
+                  autoComplete="on"
+                >
                   <FormField
                     control={signupForm.control}
                     name="name"
@@ -305,6 +310,7 @@ export default function LoginPage() {
                                 onChange={(event) => field.onChange(event.target.value)}
                                 data-testid="input-name"
                                 placeholder="Enter your name"
+                                autoComplete="name"
                               />
                             </FormControl>
                             <FormMessage />
@@ -326,6 +332,7 @@ export default function LoginPage() {
                                 onBlur={field.onBlur}
                                 onChange={(event) => field.onChange(event.target.value)}
                                 data-testid="input-email"
+                                autoComplete="email"
                               />
                             </FormControl>
                             <FormMessage />
@@ -347,6 +354,7 @@ export default function LoginPage() {
                                 onBlur={field.onBlur}
                                 onChange={(event) => field.onChange(event.target.value)}
                                 data-testid="input-password"
+                                autoComplete="new-password"
                               />
                             </FormControl>
                             <FormMessage />
@@ -360,7 +368,12 @@ export default function LoginPage() {
               </Form>
             ) : (
               <Form {...emailLoginForm}>
-                <form onSubmit={emailLoginForm.handleSubmit(onLogin)} className="space-y-4">
+                <form
+                  key="signin-email"
+                  onSubmit={emailLoginForm.handleSubmit(onLogin)}
+                  className="space-y-4"
+                  autoComplete="on"
+                >
                   <FormField
                     control={emailLoginForm.control}
                     name="email"
@@ -368,7 +381,12 @@ export default function LoginPage() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input type="email" {...field} data-testid="input-email" />
+                          <Input
+                            type="email"
+                            {...field}
+                            data-testid="input-email"
+                            autoComplete="username"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -381,7 +399,12 @@ export default function LoginPage() {
                       <FormItem>
                         <FormLabel>Password</FormLabel>
                         <FormControl>
-                          <Input type="password" {...field} data-testid="input-password" />
+                          <Input
+                            type="password"
+                            {...field}
+                            data-testid="input-password"
+                            autoComplete="current-password"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -395,7 +418,12 @@ export default function LoginPage() {
             )
           ) : isSignup ? (
             <Form {...signupForm}>
-              <form onSubmit={signupForm.handleSubmit(onSignup)} className="space-y-4">
+              <form
+                key="signup-phone"
+                onSubmit={signupForm.handleSubmit(onSignup)}
+                className="space-y-4"
+                autoComplete="on"
+              >
                 <FormField
                   control={signupForm.control}
                   name="name"
@@ -411,6 +439,7 @@ export default function LoginPage() {
                             onChange={(event) => field.onChange(event.target.value)}
                             data-testid="input-name-phone"
                             placeholder="Enter your name"
+                            autoComplete="name"
                           />
                         </FormControl>
                         <FormMessage />
@@ -425,11 +454,13 @@ export default function LoginPage() {
                       <FormLabel>Phone Number</FormLabel>
                       <FormControl>
                         <PhoneInput
+                          name={field.name}
                           value={field.value || ""}
                           onChange={field.onChange}
                           countryCode={signupForm.watch("countryCode") || "+852"}
                           onCountryCodeChange={(code) => signupForm.setValue("countryCode", code)}
                           testId="input-phone"
+                          autoComplete="tel"
                         />
                       </FormControl>
                       <FormMessage />
@@ -451,6 +482,7 @@ export default function LoginPage() {
                             onBlur={field.onBlur}
                             onChange={(event) => field.onChange(event.target.value)}
                             data-testid="input-password-phone"
+                            autoComplete="new-password"
                           />
                         </FormControl>
                         <FormMessage />
@@ -464,7 +496,12 @@ export default function LoginPage() {
             </Form>
           ) : (
             <Form {...phoneLoginForm}>
-              <form onSubmit={phoneLoginForm.handleSubmit(onLogin)} className="space-y-4">
+              <form
+                key="signin-phone"
+                onSubmit={phoneLoginForm.handleSubmit(onLogin)}
+                className="space-y-4"
+                autoComplete="on"
+              >
                 <FormField
                   control={phoneLoginForm.control}
                   name="phone"
@@ -473,11 +510,13 @@ export default function LoginPage() {
                       <FormLabel>Phone Number</FormLabel>
                       <FormControl>
                         <PhoneInput
+                          name={field.name}
                           value={field.value || ""}
                           onChange={field.onChange}
                           countryCode={phoneLoginForm.watch("countryCode") || "+852"}
                           onCountryCodeChange={(code) => phoneLoginForm.setValue("countryCode", code)}
                           testId="input-phone"
+                          autoComplete="tel"
                         />
                       </FormControl>
                       <FormMessage />
@@ -489,12 +528,17 @@ export default function LoginPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" {...field} data-testid="input-password-phone" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            {...field}
+                            data-testid="input-password-phone"
+                            autoComplete="current-password"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                   )}
                 />
                 <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" data-testid="button-login-phone">
