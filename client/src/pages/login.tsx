@@ -293,45 +293,65 @@ export default function LoginPage() {
                   <FormField
                     control={signupForm.control}
                     name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Name</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            data-testid="input-name"
-                            placeholder="Enter your name"
-                          />
-                        </FormControl>
-                        <FormMessage />
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Name</FormLabel>
+                            <FormControl>
+                              <Input
+                                name={field.name}
+                                ref={field.ref}
+                                value={field.value ?? ""}
+                                onBlur={field.onBlur}
+                                onChange={(event) => field.onChange(event.target.value)}
+                                data-testid="input-name"
+                                placeholder="Enter your name"
+                              />
+                            </FormControl>
+                            <FormMessage />
                       </FormItem>
                     )}
                   />
                   <FormField
                     control={signupForm.control}
                     name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" {...field} data-testid="input-email" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="email"
+                                name={field.name}
+                                ref={field.ref}
+                                value={field.value ?? ""}
+                                onBlur={field.onBlur}
+                                onChange={(event) => field.onChange(event.target.value)}
+                                data-testid="input-email"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                   <FormField
                     control={signupForm.control}
                     name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" {...field} data-testid="input-password" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="password"
+                                name={field.name}
+                                ref={field.ref}
+                                value={field.value ?? ""}
+                                onBlur={field.onBlur}
+                                onChange={(event) => field.onChange(event.target.value)}
+                                data-testid="input-password"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                   />
                   <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" data-testid="button-signup">
                     Create Account
@@ -379,17 +399,21 @@ export default function LoginPage() {
                 <FormField
                   control={signupForm.control}
                   name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          data-testid="input-name-phone"
-                          placeholder="Enter your name"
-                        />
-                      </FormControl>
-                      <FormMessage />
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Name</FormLabel>
+                        <FormControl>
+                          <Input
+                            name={field.name}
+                            ref={field.ref}
+                            value={field.value ?? ""}
+                            onBlur={field.onBlur}
+                            onChange={(event) => field.onChange(event.target.value)}
+                            data-testid="input-name-phone"
+                            placeholder="Enter your name"
+                          />
+                        </FormControl>
+                        <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -415,15 +439,23 @@ export default function LoginPage() {
                 <FormField
                   control={signupForm.control}
                   name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" {...field} data-testid="input-password-phone" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            name={field.name}
+                            ref={field.ref}
+                            value={field.value ?? ""}
+                            onBlur={field.onBlur}
+                            onChange={(event) => field.onChange(event.target.value)}
+                            data-testid="input-password-phone"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                 />
                 <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" data-testid="button-signup-phone">
                   Create Account
