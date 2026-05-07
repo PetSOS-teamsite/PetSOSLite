@@ -76,6 +76,17 @@ const createPetSchema = (t: (key: string, fallback: string) => string) => z.obje
 type PetSchemaType = ReturnType<typeof createPetSchema>;
 type PetFormData = z.infer<PetSchemaType>;
 
+const emptyPetFormValues = {
+  name: "",
+  species: "",
+  breed: "",
+  age: undefined,
+  weight: undefined,
+  medicalNotes: "",
+  lastVisitHospitalId: undefined,
+  lastVisitDate: undefined,
+} satisfies PetFormData;
+
 export default function PetsPage() {
   const { user: authUser, isLoading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
@@ -108,16 +119,7 @@ export default function PetsPage() {
 
   const form = useForm<PetFormData>({
     resolver: zodResolver(petSchema),
-    defaultValues: {
-      name: "",
-      species: "",
-      breed: "",
-      age: undefined,
-      weight: undefined,
-      medicalNotes: "",
-      lastVisitHospitalId: undefined,
-      lastVisitDate: undefined,
-    },
+    defaultValues: emptyPetFormValues,
   });
 
   // Watch species to update breed options
@@ -159,7 +161,7 @@ export default function PetsPage() {
         description: t("pets.success.add_desc", "Your pet has been added to your profile."),
       });
       setIsDialogOpen(false);
-      form.reset();
+      form.reset(emptyPetFormValues);
     },
     onError: (error: Error) => {
       toast({
@@ -193,7 +195,7 @@ export default function PetsPage() {
       });
       setIsDialogOpen(false);
       setEditingPet(null);
-      form.reset();
+      form.reset(emptyPetFormValues);
     },
     onError: (error: Error) => {
       toast({
@@ -391,7 +393,7 @@ export default function PetsPage() {
     setEditingPet(null);
     setSelectedSpecies("");
     setBreedInputMode("select");
-    form.reset();
+    form.reset(emptyPetFormValues);
     setIsDialogOpen(true);
   };
 
@@ -471,7 +473,7 @@ export default function PetsPage() {
                           <FormControl>
                             <Input
                               {...field}
-                              placeholder={t("pets.name_placeholder", "Fluffy")}
+                              placeholder=""
                               data-testid="input-pet-name"
                             />
                           </FormControl>
@@ -549,7 +551,7 @@ export default function PetsPage() {
                                     event.target.value === "" ? undefined : Number(event.target.value)
                                   )
                                 }
-                                placeholder={t("pets.age_placeholder", "3")}
+                                placeholder=""
                                 data-testid="input-pet-age"
                               />
                             </FormControl>
@@ -577,7 +579,7 @@ export default function PetsPage() {
                                     event.target.value === "" ? undefined : Number(event.target.value)
                                   )
                                 }
-                                placeholder={t("pets.weight_placeholder", "10.5")}
+                                placeholder=""
                                 data-testid="input-pet-weight"
                               />
                             </FormControl>
@@ -703,7 +705,7 @@ export default function PetsPage() {
                         onClick={() => {
                           setIsDialogOpen(false);
                           setEditingPet(null);
-                          form.reset();
+                          form.reset(emptyPetFormValues);
                         }}
                         data-testid="button-cancel-pet"
                       >
