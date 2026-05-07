@@ -59,6 +59,12 @@ interface Hospital {
   replyStatus?: 'active' | 'unresponsive';
 }
 
+interface Clinic {
+  id: string;
+  name: string;
+  nameZh: string | null;
+}
+
 // Status badge colors and labels
 const getStatusConfig = (status: string | null, t: any, language: string) => {
   switch (status) {
@@ -166,7 +172,7 @@ function buildPetInfoString(emergencyRequest: any, t: any, targetClinicId?: stri
 function buildStructuredBroadcastMessage(
   emergencyRequest: any,
   t: any,
-  allHospitals: Hospital[]
+  allClinics: Clinic[]
 ): string {
   if (!emergencyRequest) return t('clinic_results.emergency_care_needed', 'Emergency pet care needed');
   
@@ -292,12 +298,12 @@ function buildStructuredBroadcastMessage(
     sections.push(t('clinic_results.location_not_provided', 'Location not provided'));
   }
   
-  // Add information about pet's regular hospital if exists
+  // Add information about pet's regular clinic if exists
   if (emergencyRequest?.pet?.lastVisitHospitalId) {
-    const regularHospital = allHospitals.find((h: Hospital) => h.id === emergencyRequest.pet.lastVisitHospitalId);
-    if (regularHospital) {
+    const regularClinic = allClinics.find((clinic) => clinic.id === emergencyRequest.pet.lastVisitHospitalId);
+    if (regularClinic) {
       sections.push('');
-      sections.push(`📋 ${t('clinic_results.regular_clinic_note', 'NOTE: This pet is a registered patient at')} ${regularHospital.nameEn}`);
+      sections.push(`📋 ${t('clinic_results.regular_clinic_note', 'NOTE: This pet is a registered patient at')} ${regularClinic.name}`);
       if (emergencyRequest.pet.lastVisitDate) {
         const visitDate = new Date(emergencyRequest.pet.lastVisitDate).toLocaleDateString();
         sections.push(`${t('clinic_results.last_visit', 'Last visit')}: ${visitDate}`);
@@ -354,6 +360,10 @@ export default function ClinicResultsPage() {
   // Fetch hospitals
   const { data: allHospitals = [] } = useQuery<Hospital[]>({
     queryKey: ['/api/hospitals'],
+  });
+
+  const { data: allClinics = [] } = useQuery<Clinic[]>({
+    queryKey: ['/api/clinics'],
   });
 
   // Fetch broadcast messages for this emergency to show live delivery status
@@ -655,7 +665,7 @@ export default function ClinicResultsPage() {
             .map((h: Hospital) => h.id);
       
       // Build structured message with clear sections and formatted phone
-      const message = buildStructuredBroadcastMessage(emergencyRequest, t, allHospitals);
+      const message = buildStructuredBroadcastMessage(emergencyRequest, t, allClinics);
       
       const response = await apiRequest(
         'POST',
@@ -723,7 +733,7 @@ export default function ClinicResultsPage() {
       }
       
       // Build structured message with clear sections and formatted phone
-      const message = buildStructuredBroadcastMessage(emergencyRequest, t, allHospitals);
+      const message = buildStructuredBroadcastMessage(emergencyRequest, t, allClinics);
       
       const response = await apiRequest(
         'POST',
@@ -1665,7 +1675,7 @@ export default function ClinicResultsPage() {
                 <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto">
                   <strong className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('clinic_results.message_preview', 'Message Preview')}:</strong>
                   <pre className="mt-2 text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap font-sans break-all">
-                    {buildStructuredBroadcastMessage(emergencyRequest, t, allHospitals)}
+                    {buildStructuredBroadcastMessage(emergencyRequest, t, allClinics)}
                   </pre>
                 </div>
               </div>

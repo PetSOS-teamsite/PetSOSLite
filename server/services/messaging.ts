@@ -631,16 +631,16 @@ export class MessagingService {
     if (pet && pet.lastVisitHospitalId) {
       templateName = `emergency_pet_alert_full${langSuffix}`;
       
-      // Fetch last visited hospital name
-      const lastHospital = await storage.getHospital(pet.lastVisitHospitalId);
-      const lastHospitalName = lastHospital ? (isZhHk && lastHospital.nameZh ? lastHospital.nameZh : lastHospital.nameEn) : (isZhHk ? '不詳' : 'Unknown');
+      // Fetch last visited clinic name
+      const lastClinic = await storage.getClinic(pet.lastVisitHospitalId);
+      const lastClinicName = lastClinic ? (isZhHk && lastClinic.nameZh ? lastClinic.nameZh : lastClinic.name) : (isZhHk ? '不詳' : 'Unknown');
       
       // Build profile link
       const profileLink = `${getBaseUrl()}/emergency-profile/${emergencyRequestId}`;
       
       // Build 12 variables for full template (includes profile URL)
       variables = [
-        lastHospitalName, // {{1}} Last visited hospital
+        lastClinicName, // {{1}} Last visited clinic
         pet.name || (isZhHk ? '未命名' : 'Unnamed'), // {{2}} Pet name
         emergencyRequest.petSpecies || (isZhHk ? '不詳' : 'Unknown'), // {{3}} Species
         emergencyRequest.petBreed || (isZhHk ? '不詳' : 'Unknown'), // {{4}} Breed

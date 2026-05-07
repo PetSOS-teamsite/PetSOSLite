@@ -110,7 +110,7 @@ export const pets = pgTable("pets", {
   weight: text("weight"), // in kg
   medicalNotes: text("medical_notes"), // primary medical notes field
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  lastVisitHospitalId: varchar("last_visit_hospital_id").references(() => hospitals.id, { onDelete: 'set null' }),
+  lastVisitHospitalId: varchar("last_visit_hospital_id").references(() => clinics.id, { onDelete: 'set null' }),
   lastVisitDate: timestamp("last_visit_date"),
   type: text("type"), // alternate field for species
   color: text("color"),
