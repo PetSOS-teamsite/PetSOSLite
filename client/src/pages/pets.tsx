@@ -397,6 +397,10 @@ export default function PetsPage() {
     setIsDialogOpen(true);
   };
 
+  const preventNumberInputWheelChange = (event: React.WheelEvent<HTMLInputElement>) => {
+    event.currentTarget.blur();
+  };
+
   // Check if profile is incomplete and redirect
   // Profile is complete if user has at least one contact method (email OR phone)
   const isProfileIncomplete = userProfile && (!userProfile.email && !userProfile.phone);
@@ -551,6 +555,7 @@ export default function PetsPage() {
                                     event.target.value === "" ? undefined : Number(event.target.value)
                                   )
                                 }
+                                onWheel={preventNumberInputWheelChange}
                                 placeholder=""
                                 data-testid="input-pet-age"
                               />
@@ -579,6 +584,7 @@ export default function PetsPage() {
                                     event.target.value === "" ? undefined : Number(event.target.value)
                                   )
                                 }
+                                onWheel={preventNumberInputWheelChange}
                                 placeholder=""
                                 data-testid="input-pet-weight"
                               />
