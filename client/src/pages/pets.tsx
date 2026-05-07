@@ -539,8 +539,16 @@ export default function PetsPage() {
                             <FormLabel>{t("pets.age", "Age (Optional)")}</FormLabel>
                             <FormControl>
                               <Input
-                                {...field}
                                 type="number"
+                                name={field.name}
+                                ref={field.ref}
+                                value={field.value ?? ""}
+                                onBlur={field.onBlur}
+                                onChange={(event) =>
+                                  field.onChange(
+                                    event.target.value === "" ? undefined : Number(event.target.value)
+                                  )
+                                }
                                 placeholder={t("pets.age_placeholder", "3")}
                                 data-testid="input-pet-age"
                               />
@@ -558,9 +566,17 @@ export default function PetsPage() {
                             <FormLabel>{t("pets.weight", "Weight (kg, Optional)")}</FormLabel>
                             <FormControl>
                               <Input
-                                {...field}
                                 type="number"
                                 step="0.1"
+                                name={field.name}
+                                ref={field.ref}
+                                value={field.value ?? ""}
+                                onBlur={field.onBlur}
+                                onChange={(event) =>
+                                  field.onChange(
+                                    event.target.value === "" ? undefined : Number(event.target.value)
+                                  )
+                                }
                                 placeholder={t("pets.weight_placeholder", "10.5")}
                                 data-testid="input-pet-weight"
                               />
