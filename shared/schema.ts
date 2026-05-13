@@ -119,7 +119,9 @@ export const pets = pgTable("pets", {
   photoUrl: text("photo_url"), // Pet profile photo URL
 });
 
-export const insertPetSchema = createInsertSchema(pets).omit({
+export const insertPetSchema = createInsertSchema(pets, {
+  lastVisitDate: z.coerce.date().nullable().optional(),
+}).omit({
   id: true,
   createdAt: true,
 });
