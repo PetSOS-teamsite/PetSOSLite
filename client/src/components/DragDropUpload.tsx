@@ -83,6 +83,26 @@ export function DragDropUpload({
     return null;
   }, [maxFileSize, isValidFileType, language]);
 
+  const uploadFileThroughApi = async (file: File): Promise<string> => {
+    const response = await fetch('/api/medical-records/upload-file', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'X-File-Content-Type': file.type || 'application/octet-stream',
+      },
+      body: file,
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const text = (await response.text()) || response.statusText;
+      throw new Error(`Fallback upload failed: ${response.status} ${text}`);
+    }
+
+    const result = await response.json();
+    return result.filePath;
+  };
+
   const uploadFile = async (uploadedFile: UploadedFile): Promise<void> => {
     const { file, id } = uploadedFile;
 
@@ -96,38 +116,45 @@ export function DragDropUpload({
       });
       const { uploadURL } = await response.json();
 
-      await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        
-        xhr.upload.addEventListener('progress', (event) => {
-          if (event.lengthComputable) {
-            const progress = Math.round((event.loaded / event.total) * 100);
-            setFiles(prev => prev.map(f => 
-              f.id === id ? { ...f, progress } : f
-            ));
-          }
+      let finalUrl = "";
+
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          
+          xhr.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) {
+              const progress = Math.round((event.loaded / event.total) * 100);
+              setFiles(prev => prev.map(f => 
+                f.id === id ? { ...f, progress } : f
+              ));
+            }
+          });
+
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve();
+            } else {
+              const responseText = xhr.responseText?.trim();
+              reject(new Error(
+                responseText
+                  ? `Upload failed: ${xhr.status} ${responseText}`
+                  : `Upload failed: ${xhr.status}`
+              ));
+            }
+          };
+
+          xhr.onerror = () => reject(new Error('Network error while uploading to storage. Check storage CORS and signed URL headers.'));
+          xhr.open('PUT', uploadURL);
+          xhr.setRequestHeader('Content-Type', file.type);
+          xhr.send(file);
         });
 
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve();
-          } else {
-            const responseText = xhr.responseText?.trim();
-            reject(new Error(
-              responseText
-                ? `Upload failed: ${xhr.status} ${responseText}`
-                : `Upload failed: ${xhr.status}`
-            ));
-          }
-        };
-
-        xhr.onerror = () => reject(new Error('Network error while uploading to storage. Check storage CORS and signed URL headers.'));
-        xhr.open('PUT', uploadURL);
-        xhr.setRequestHeader('Content-Type', file.type);
-        xhr.send(file);
-      });
-
-      const finalUrl = uploadURL.split('?')[0];
+        finalUrl = uploadURL.split('?')[0];
+      } catch (directUploadError: any) {
+        console.warn('Direct storage upload failed, retrying through API:', directUploadError);
+        finalUrl = await uploadFileThroughApi(file);
+      }
       
       setFiles(prev => prev.map(f => 
         f.id === id ? { ...f, status: "success" as const, progress: 100, uploadedUrl: finalUrl } : f

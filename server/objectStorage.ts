@@ -125,7 +125,7 @@ class GCSStorageProvider implements StorageProvider {
   readonly type: StorageProviderType = "gcs";
   readonly bucketName: string;
   private storage: Storage;
-  private uploadsPrefix: string = "uploads";
+  private uploadsPrefix: string = ".private/uploads";
 
   constructor() {
     const serviceAccountJson = process.env.GCS_SERVICE_ACCOUNT_JSON;
@@ -367,6 +367,27 @@ export class ObjectStorageService {
     const objectName = `${uploadsPrefix}/${objectId}`;
 
     return this.provider.signUploadUrl(objectName, 900, contentType);
+  }
+
+  async uploadObjectEntityBuffer(buffer: Buffer, contentType?: string): Promise<string> {
+    if (this.provider.type === "unavailable") {
+      throw new Error("Storage provider not available");
+    }
+
+    const objectId = randomUUID();
+    const uploadsPrefix = this.provider.getUploadsPrefix();
+    const objectName = `${uploadsPrefix}/${objectId}`;
+    const file = this.provider.getBucket().file(objectName);
+
+    await file.save(buffer, {
+      resumable: false,
+      contentType: contentType || "application/octet-stream",
+      metadata: {
+        contentType: contentType || "application/octet-stream",
+      },
+    });
+
+    return this.provider.getPublicUrl(objectName);
   }
 
   async getObjectEntityFile(objectPath: string): Promise<File> {

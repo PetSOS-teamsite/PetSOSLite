@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
@@ -5410,6 +5410,53 @@ PetSOS 團隊`;
       res.status(500).json({ error: error.message || "Failed to get upload URL" });
     }
   });
+
+  // Upload medical record through the API as a fallback when direct storage PUT is blocked by CORS
+  app.post(
+    "/api/medical-records/upload-file",
+    isAuthenticated,
+    express.raw({ type: "*/*", limit: STORAGE_QUOTA.MAX_FILE_SIZE }),
+    async (req: any, res) => {
+      try {
+        const userId = (req.user as any).id;
+        const fileSize = Buffer.isBuffer(req.body) ? req.body.length : 0;
+        const contentType = req.get("x-file-content-type") || req.get("content-type") || "application/octet-stream";
+
+        if (!fileSize) {
+          return res.status(400).json({ error: "File body is required" });
+        }
+
+        const usage = await storage.getUserStorageUsage(userId);
+
+        if (usage.recordCount >= STORAGE_QUOTA.MAX_RECORDS_PER_USER) {
+          return res.status(403).json({
+            error: "Storage quota exceeded",
+            message: `Maximum of ${STORAGE_QUOTA.MAX_RECORDS_PER_USER} medical records allowed. Please delete some records to upload more.`,
+          });
+        }
+
+        if ((usage.usedBytes + fileSize) > STORAGE_QUOTA.MAX_STORAGE_PER_USER) {
+          const maxMB = Math.round(STORAGE_QUOTA.MAX_STORAGE_PER_USER / (1024 * 1024));
+          return res.status(403).json({
+            error: "Storage quota exceeded",
+            message: `This upload would exceed your storage limit of ${maxMB}MB.`,
+          });
+        }
+
+        const objectStorageService = new ObjectStorageService();
+        const filePath = await objectStorageService.uploadObjectEntityBuffer(req.body, contentType);
+
+        res.json({
+          filePath,
+          size: fileSize,
+          type: contentType,
+        });
+      } catch (error: any) {
+        console.error("Error uploading medical record file:", error);
+        res.status(500).json({ error: error.message || "Failed to upload file" });
+      }
+    }
+  );
 
   // Create medical record after upload
   app.post("/api/medical-records", isAuthenticated, async (req: any, res) => {
