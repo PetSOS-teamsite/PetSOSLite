@@ -5392,8 +5392,9 @@ PetSOS 團隊`;
         });
       }
       
+      const { contentType } = req.body || {};
       const objectStorageService = new ObjectStorageService();
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL(contentType);
       res.json({ 
         uploadURL,
         quota: {
@@ -7192,4 +7193,3 @@ PetSOS 現已準備好幫助您在香港尋找 24 小時獸醫服務。
 
   return httpServer;
 }
-

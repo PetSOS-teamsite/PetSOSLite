@@ -91,12 +91,13 @@ export function DragDropUpload({
     ));
 
     try {
-      const response = await apiRequest('POST', '/api/medical-records/upload-url');
+      const response = await apiRequest('POST', '/api/medical-records/upload-url', {
+        contentType: file.type,
+      });
       const { uploadURL } = await response.json();
 
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.withCredentials = true;
         
         xhr.upload.addEventListener('progress', (event) => {
           if (event.lengthComputable) {
