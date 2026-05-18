@@ -112,11 +112,16 @@ export function DragDropUpload({
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve();
           } else {
-            reject(new Error(`Upload failed: ${xhr.status}`));
+            const responseText = xhr.responseText?.trim();
+            reject(new Error(
+              responseText
+                ? `Upload failed: ${xhr.status} ${responseText}`
+                : `Upload failed: ${xhr.status}`
+            ));
           }
         };
 
-        xhr.onerror = () => reject(new Error('Network error'));
+        xhr.onerror = () => reject(new Error('Network error while uploading to storage. Check storage CORS and signed URL headers.'));
         xhr.open('PUT', uploadURL);
         xhr.setRequestHeader('Content-Type', file.type);
         xhr.send(file);
@@ -135,9 +140,11 @@ export function DragDropUpload({
       });
     } catch (error: any) {
       console.error('Upload error:', error);
-      const errorMessage = language === 'zh-HK' 
-        ? '上傳失敗，請重試' 
-        : 'Upload failed, please try again';
+      const errorMessage = error?.message || (
+        language === 'zh-HK' 
+          ? '上傳失敗，請重試' 
+          : 'Upload failed, please try again'
+      );
       
       setFiles(prev => prev.map(f => 
         f.id === id ? { ...f, status: "error" as const, error: errorMessage } : f
